@@ -7,11 +7,12 @@ import { ConfigService } from './core/config.service';
 import { OrgService } from './core/org.service';
 import { AccountService } from './core/account.service';
 import { TransactionService } from './core/transaction.service';
+import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  styleUrls: ['./app.component.scss']
+  styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
   public showLeftNav: boolean = false;
@@ -22,19 +23,19 @@ export class AppComponent implements OnInit {
   public navItems: any = {
     '/dashboard': {
       link: '/dashboard',
-      name: 'Dashboard'
+      name: 'Dashboard',
     },
     '/transactions/new': {
       link: '/transactions/new',
-      name: 'New Transaction'
+      name: 'New Transaction',
     },
     '/accounts': {
       link: '/accounts',
-      name: 'Accounts'
+      name: 'Accounts',
     },
     '/reports': {
       link: '/reports',
-      name: 'Reports'
+      name: 'Reports',
     },
     '/prices': {
       link: '/prices',
@@ -42,25 +43,25 @@ export class AppComponent implements OnInit {
     },
     '/orgs': {
       link: '/orgs',
-      name: 'Organization'
+      name: 'Organization',
     },
     '/settings': {
       link: '/settings',
-      name: 'Settings'
+      name: 'Settings',
     },
     '/login': {
       link: '/login',
       name: 'Login',
-      hidden: true
+      hidden: true,
     },
     '/logout': {
       link: '/logout',
-      name: 'Logout'
+      name: 'Logout',
     },
     '/tools/reconcile': {
       link: '/tools/reconcile',
-      name: 'Reconcile'
-    }
+      name: 'Reconcile',
+    },
   };
 
   public leftNav: any[] = [
@@ -70,19 +71,17 @@ export class AppComponent implements OnInit {
     this.navItems['/reports'],
     this.navItems['/prices'],
     this.navItems['/orgs'],
-    this.navItems['/settings']
+    this.navItems['/settings'],
   ];
 
-  public toolsNav: any[] = [
-    this.navItems['/tools/reconcile']
-  ];
+  public toolsNav: any[] = [this.navItems['/tools/reconcile']];
 
   // Allowed unauthenticated links besides login
   public passthroughLinks: any[] = [
     '/register',
     '/user/verify',
     '/user/reset-password',
-    '/settings'
+    '/settings',
   ];
 
   constructor(
@@ -93,7 +92,8 @@ export class AppComponent implements OnInit {
     private configService: ConfigService,
     private orgService: OrgService,
     private accountService: AccountService,
-    private transactionService: TransactionService) {
+    private transactionService: TransactionService,
+  ) {
     this.log.setLevel(Logger.INFO);
   }
 
@@ -113,20 +113,20 @@ export class AppComponent implements OnInit {
 
       //this.dataService.setLoading(false);
 
-      if(!user) {
+      if (!user) {
         this.loggedIn = false;
         this.log.debug('no user');
         this.showLoggedOutMenu();
 
         let passthrough = false;
 
-        this.passthroughLinks.forEach(link => {
-          if(this.location.path().startsWith(link)) {
+        this.passthroughLinks.forEach((link) => {
+          if (this.location.path().startsWith(link)) {
             passthrough = true;
           }
-        })
+        });
 
-        if(passthrough) {
+        if (passthrough) {
           this.router.initialNavigation();
           return;
         }
@@ -135,7 +135,7 @@ export class AppComponent implements OnInit {
         return;
       }
 
-      if(!org) {
+      if (!org) {
         this.loggedIn = true;
         this.log.debug('display new org page');
         this.showCreateOrgMenu();
@@ -150,7 +150,7 @@ export class AppComponent implements OnInit {
 
       this.showLoggedInMenu();
 
-      if(
+      if (
         this.router.url === '/login' ||
         this.router.url === '/orgs' ||
         this.router.url === '/orgs/new'
@@ -167,18 +167,22 @@ export class AppComponent implements OnInit {
       this.sessionService.init();
     });
 
-    this.router.events.filter(val => {
-      return val instanceof NavigationEnd;
-    }).subscribe(val => {
-      let event = val as NavigationEnd;
-      if(event.url.match(/^\/accounts\/(.+?)\/transactions/)) {
-        this.hideLeftNav = true;
-        this.showLeftNav = false;
-      } else {
-        this.hideLeftNav = false;
-        this.showLeftNav = false;
-      }
-    });
+    this.router.events
+      .pipe(
+        filter((val) => {
+          return val instanceof NavigationEnd;
+        }),
+      )
+      .subscribe((val) => {
+        let event = val as NavigationEnd;
+        if (event.url.match(/^\/accounts\/(.+?)\/transactions/)) {
+          this.hideLeftNav = true;
+          this.showLeftNav = false;
+        } else {
+          this.hideLeftNav = false;
+          this.showLeftNav = false;
+        }
+      });
   }
 
   showLoggedInMenu() {

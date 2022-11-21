@@ -3,4 +3,4 @@ export class SessionOptions {
   constructor(options: any = {}) {
     this.createDefaultAccounts = options.createDefaultAccounts;
   }
-};
+}

@@ -1,33 +1,32 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
+import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { ReactiveFormsModule } from '@angular/forms';
-import { TxListPage } from './list';
+import { TxListPageComponent } from './list';
 import { SharedModule } from '../shared/shared.module';
 import { AppRoutingModule } from '../app-routing.module';
-import { AdvancedEdit } from './advancededit';
-import { Autocomplete } from './autocomplete';
-import { Breadcrumbs } from './breadcrumbs';
-import { NewTransactionPage } from './new';
-
+import { AdvancedEditComponent } from './advancededit';
+import { AutocompleteComponent } from './autocomplete';
+import { BreadcrumbsComponent } from './breadcrumbs';
+import { NewTransactionPageComponent } from './new';
 
 @NgModule({
   declarations: [
-    TxListPage,
-    AdvancedEdit,
-    Autocomplete,
-    Breadcrumbs,
-    NewTransactionPage
+    TxListPageComponent,
+    AdvancedEditComponent,
+    AutocompleteComponent,
+    BreadcrumbsComponent,
+    NewTransactionPageComponent,
   ],
   imports: [
     BrowserModule,
     NgbModule,
     ReactiveFormsModule,
     SharedModule,
-    AppRoutingModule
+    AppRoutingModule,
   ],
   exports: [],
   providers: [],
-  entryComponents: [AdvancedEdit]
+  entryComponents: [AdvancedEditComponent],
 })
-export class TransactionModule { }
+export class TransactionModule {}

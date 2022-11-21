@@ -5,23 +5,19 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { SharedModule } from '../shared/shared.module';
 import { AppRoutingModule } from '../app-routing.module';
 
-import { ReconcilePage } from './reconcile';
-import { ReconcileModal } from './reconcile-modal';
-
+import { ReconcilePageComponent } from './reconcile';
+import { ReconcileModalComponent } from './reconcile-modal';
 
 @NgModule({
-  declarations: [
-    ReconcilePage,
-    ReconcileModal
-  ],
+  declarations: [ReconcilePageComponent, ReconcileModalComponent],
   imports: [
     BrowserModule,
     NgbModule,
     ReactiveFormsModule,
     SharedModule,
-    AppRoutingModule
+    AppRoutingModule,
   ],
   providers: [],
-  entryComponents: [ReconcileModal]
+  entryComponents: [ReconcileModalComponent],
 })
-export class ReconcileModule { }
+export class ReconcileModule {}

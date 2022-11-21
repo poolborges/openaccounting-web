@@ -5,7 +5,7 @@ import { SessionService } from './session.service';
 import { ConfigService } from './config.service';
 import { Org } from '../shared/org';
 import { Invite } from '../shared/invite';
-import { Observable } from 'rxjs/Observable';
+import { Observable, tap } from 'rxjs';
 import { SessionOptions } from '../shared/session-options';
 
 @Injectable()
@@ -16,7 +16,8 @@ export class OrgService {
     private log: Logger,
     private apiService: ApiService,
     private sessionService: SessionService,
-    private configService: ConfigService) {
+    private configService: ConfigService,
+  ) {
     this.log.debug('orgService constructor');
 
     this.sessionService.getSessions().subscribe(([user, org]) => {
@@ -39,32 +40,35 @@ export class OrgService {
 
   newOrg(org: Org, createDefaultAccounts: string): Observable<Org> {
     let sessionOptions = new SessionOptions({
-      createDefaultAccounts: createDefaultAccounts
+      createDefaultAccounts: createDefaultAccounts,
     });
 
-    return this.apiService.postOrg(org)
-      .do(org => {
+    return this.apiService.postOrg(org).pipe(
+      tap((org) => {
         this.org = org;
         this.configService.put('defaultOrg', this.org.id);
         this.sessionService.switchOrg(this.org, sessionOptions);
-      });
+      }),
+    );
   }
 
   selectOrg(id: string): Observable<Org> {
-    return this.getOrg(id)
-      .do(org => {
+    return this.getOrg(id).pipe(
+      tap((org) => {
         this.org = org;
         this.configService.put('defaultOrg', this.org.id);
         this.sessionService.switchOrg(this.org);
-      });
+      }),
+    );
   }
 
   updateOrg(org: Org): Observable<Org> {
-    return this.apiService.putOrg(org)
-      .do(org => {
+    return this.apiService.putOrg(org).pipe(
+      tap((org) => {
         this.org = org;
         this.sessionService.switchOrg(this.org);
-      })
+      }),
+    );
   }
 
   getInvites(): Observable<Invite[]> {
@@ -78,7 +82,7 @@ export class OrgService {
   acceptInvite(inviteId: string): Observable<Invite> {
     let invite = new Invite({
       id: inviteId,
-      accepted: true
+      accepted: true,
     });
 
     return this.apiService.putInvite(invite);

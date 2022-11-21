@@ -6,11 +6,9 @@ import { WebSocketService } from './websocket.service';
 import { Price } from '../shared/price';
 import { Org } from '../shared/org';
 import { Message } from '../shared/message';
-import { Observable } from 'rxjs/Observable';
-import { Subscription } from 'rxjs/Subscription';
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/merge';
+import { concat, merge, Observable, of, Subject, Subscription } from 'rxjs';
 import { Util } from '../shared/util';
+import { switchMap } from 'rxjs/operators';
 
 @Injectable()
 export class PriceService {
@@ -23,8 +21,8 @@ export class PriceService {
     private log: Logger,
     private apiService: ApiService,
     private wsService: WebSocketService,
-    private sessionService: SessionService) {
-
+    private sessionService: SessionService,
+  ) {
     this.newPrices = new Subject<Price>();
     this.deletedPrices = new Subject<Price>();
 
@@ -32,7 +30,7 @@ export class PriceService {
       this.log.debug('priceService new session');
 
       // cleanup after old session
-      if(this.priceSubscription) {
+      if (this.priceSubscription) {
         this.wsService.unsubscribe('price', this.org.id);
         this.priceSubscription.unsubscribe();
         this.priceSubscription = null;
@@ -40,18 +38,18 @@ export class PriceService {
 
       this.org = org;
 
-      if(org) {
+      if (org) {
         // subscribe to web socket
         let priceWs$ = this.wsService.subscribe('price', org.id);
 
-        this.priceSubscription = priceWs$.subscribe(message => {
+        this.priceSubscription = priceWs$.subscribe((message) => {
           let price = null;
 
-          if(message.data) {
+          if (message.data) {
             price = new Price(message.data);
           }
 
-          switch(message.action) {
+          switch (message.action) {
             case 'create':
               this.newPrices.next(price);
               break;
@@ -78,11 +76,14 @@ export class PriceService {
     let newPrices$ = this.getNewPrices();
     let deletedPrices$ = this.getDeletedPrices();
 
-    let stream$ = Observable.of(null).concat(newPrices$.merge(deletedPrices$));
+    //let stream$ = Observable.of(null).concat(newPrices$.merge(deletedPrices$));
+    let stream$ = merge(newPrices$, deletedPrices$);
 
-    return stream$.switchMap(() => {
-      return this.apiService.getPricesNearestInTime(date);
-    });
+    return stream$.pipe(
+      switchMap(() => {
+        return this.apiService.getPricesNearestInTime(date);
+      }),
+    );
   }
 
   getPricesByCurrency(currency: string): Observable<Price[]> {
@@ -98,10 +99,12 @@ export class PriceService {
   }
 
   updatePrice(price: Price): Observable<Price> {
-    return this.apiService.deletePrice(price.id).switchMap(() => {
-      let newPrice = new Price(price);
-      newPrice.id = Util.newGuid();
-      return this.apiService.postPrice(newPrice);
-    });
+    return this.apiService.deletePrice(price.id).pipe(
+      switchMap(() => {
+        let newPrice = new Price(price);
+        newPrice.id = Util.newGuid();
+        return this.apiService.postPrice(newPrice);
+      }),
+    );
   }
 }

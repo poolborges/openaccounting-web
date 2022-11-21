@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiKey } from '../shared/apikey';
 import { ApiService } from './api.service';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 
 @Injectable()
 export class ApiKeyService {

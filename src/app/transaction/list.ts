@@ -1,37 +1,46 @@
-import { Component, Input, OnInit, ViewChild, ElementRef, AfterViewChecked, Renderer, HostListener} from '@angular/core';
+import {
+  Component,
+  Input,
+  OnInit,
+  ViewChild,
+  ElementRef,
+  AfterViewChecked,
+  Renderer2,
+  HostListener,
+} from '@angular/core';
 import { Logger } from '../core/logger';
 import { ActivatedRoute } from '@angular/router';
 import { TransactionService } from '../core/transaction.service';
 import { OrgService } from '../core/org.service';
 import { AccountService } from '../core/account.service';
 import { Account, AccountTree } from '../shared/account';
-import { Transaction, Split} from '../shared/transaction';
+import { Transaction, Split } from '../shared/transaction';
 import { AppError } from '../shared/error';
-//import { EditTxPage } from './edit';
+//import { EditTxPageComponent } from './edit';
 import {
   FormControl,
   FormGroup,
   FormArray,
   Validators,
   FormBuilder,
-  AbstractControl
+  AbstractControl,
 } from '@angular/forms';
 import { NgbModal, ModalDismissReasons } from '@ng-bootstrap/ng-bootstrap';
 import { Util } from '../shared/util';
 import { DateUtil } from '../shared/dateutil';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/mergeMap';
-import { AdvancedEdit } from './advancededit';
+import { merge, MonoTypeOperatorFunction, Observable, pipe } from 'rxjs';
+import { AdvancedEditComponent } from './advancededit';
 import { TxItem } from './txitem';
-import { Subject } from 'rxjs';
+import { concat, Subject } from 'rxjs';
 import { Org } from '../shared/org';
+import { debounceTime, mergeMap, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-txlist',
   templateUrl: 'list.html',
-  styleUrls: ['./list.scss']
+  styleUrls: ['./list.scss'],
 })
-export class TxListPage implements OnInit, AfterViewChecked {
+export class TxListPageComponent implements OnInit, AfterViewChecked {
   @ViewChild('body') body: ElementRef;
   @ViewChild('confirmDeleteModal') confirmDeleteModal: ElementRef;
   public account: Account;
@@ -61,9 +70,9 @@ export class TxListPage implements OnInit, AfterViewChecked {
     private orgService: OrgService,
     private accountService: AccountService,
     private fb: FormBuilder,
-    private renderer: Renderer,
+    private renderer: Renderer2,
     private modalService: NgbModal,
-    private eRef: ElementRef
+    private eRef: ElementRef,
   ) {
     this.items = [];
     this.limit = 50;
@@ -77,13 +86,13 @@ export class TxListPage implements OnInit, AfterViewChecked {
     this.accountId = this.route.snapshot.paramMap.get('id'); //+this.route.snapshot.paramMap.get('id');
     this.org = this.orgService.getCurrentOrg();
 
-    this.accountService.getAccountTree().subscribe(tree => {
+    this.accountService.getAccountTree().subscribe((tree) => {
       this.account = tree.accountMap[this.accountId];
-      this.selectAccounts = tree.getFlattenedAccounts().filter(account => {
+      this.selectAccounts = tree.getFlattenedAccounts().filter((account) => {
         return !account.children.length;
       });
 
-      if(!this.accountTree) {
+      if (!this.accountTree) {
         this.accountTree = tree;
 
         this.skip = 0;
@@ -91,30 +100,42 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
         let newTx = new Transaction({
           date: new Date(),
-          splits: []
+          splits: [],
         });
 
         DateUtil.setEndOfDay(newTx.date, this.org.timezone);
 
-        newTx.splits.push(new Split({
-          accountId: this.account.id
-        }));
+        newTx.splits.push(
+          new Split({
+            accountId: this.account.id,
+          }),
+        );
         newTx.splits.push(new Split());
 
         this.appendTransaction(newTx);
 
-        let options = {limit: this.limit, beforeInserted: this.date.getTime()};
-        let latestTxs$ = this.txService.getTransactionsByAccount(this.accountId, options).take(1);
-        let newTxs$ = this.txService.getNewTransactionsByAccount(this.accountId);
-        let deletedTxs$ = this.txService.getDeletedTransactionsByAccount(this.accountId);
+        let options = {
+          limit: this.limit,
+          beforeInserted: this.date.getTime(),
+        };
+        let latestTxs$ = this.txService
+          .getTransactionsByAccount(this.accountId, options)
+          .pipe(take(1));
+        let newTxs$ = this.txService.getNewTransactionsByAccount(
+          this.accountId,
+        );
+        let deletedTxs$ = this.txService.getDeletedTransactionsByAccount(
+          this.accountId,
+        );
 
-        latestTxs$.mergeMap(txs => txs).concat(newTxs$)
-          .subscribe(tx => {
+        concat(latestTxs$.pipe(mergeMap((txs) => txs)), newTxs$).subscribe(
+          (tx) => {
             // insert tx into list
             this.addTransaction(tx);
-          });
+          },
+        );
 
-        deletedTxs$.subscribe(tx => {
+        deletedTxs$.subscribe((tx) => {
           this.removeTransaction(tx);
           // remove tx from list
         });
@@ -124,8 +145,8 @@ export class TxListPage implements OnInit, AfterViewChecked {
       this.updateBalances();
     });
 
-    this.scrollSubject.debounceTime(100).subscribe(obj => {
-      if(obj.percent < 0.2 && !this.fetching && !this.historyFinished) {
+    this.scrollSubject.pipe(debounceTime(100)).subscribe((obj) => {
+      if (obj.percent < 0.2 && !this.fetching && !this.historyFinished) {
         this.fetchMoreTransactions();
       }
     });
@@ -137,29 +158,29 @@ export class TxListPage implements OnInit, AfterViewChecked {
     let txId = undefined;
     let autocomplete = false;
     event.path.forEach((elem) => {
-      if(elem.classList && elem.classList.contains('autocomplete')) {
+      if (elem.classList && elem.classList.contains('autocomplete')) {
         autocomplete = true;
       }
-      if(elem.id && elem.id.indexOf('form') === 0) {
+      if (elem.id && elem.id.indexOf('form') === 0) {
         clickedForm = true;
-        if(elem.id.indexOf('undefined') === -1) {
+        if (elem.id.indexOf('undefined') === -1) {
           txId = elem.id.substring(4, 36);
         }
       }
     });
 
-    if(autocomplete) {
+    if (autocomplete) {
       return;
     }
 
-    this.items.forEach(item => {
-      if(item.editing && (item.tx.id !== txId || !clickedForm)) {
-        if(!item.form.pristine) {
+    this.items.forEach((item) => {
+      if (item.editing && (item.tx.id !== txId || !clickedForm)) {
+        if (!item.form.pristine) {
           this.submit(item);
         }
 
         item.form = this.fb.group({
-          splits: this.fb.array([])
+          splits: this.fb.array([]),
         });
 
         item.editing = false;
@@ -171,27 +192,33 @@ export class TxListPage implements OnInit, AfterViewChecked {
     this.fetching = true;
     this.log.debug('Fetching ' + this.limit + ' more transactions');
     this.skip += this.limit;
-    let options = {limit: this.limit, skip: this.skip, beforeInserted: this.date.getTime()};
-    this.txService.getTransactionsByAccount(this.accountId, options).subscribe(txs => {
-      txs.forEach(tx => {
-        this.addTransaction(tx);
+    let options = {
+      limit: this.limit,
+      skip: this.skip,
+      beforeInserted: this.date.getTime(),
+    };
+    this.txService
+      .getTransactionsByAccount(this.accountId, options)
+      .subscribe((txs) => {
+        txs.forEach((tx) => {
+          this.addTransaction(tx);
+        });
+
+        if (txs.length < this.limit) {
+          this.historyFinished = true;
+        }
+
+        this.fetching = false;
+        this.needsScroll = false;
+        this.needsLittleScroll = false;
+        this.scrollLastHeight = this.body.nativeElement.scrollHeight;
       });
-
-      if(txs.length < this.limit) {
-        this.historyFinished = true;
-      }
-
-      this.fetching = false;
-      this.needsScroll = false;
-      this.needsLittleScroll = false;
-      this.scrollLastHeight = this.body.nativeElement.scrollHeight;
-    });
   }
 
   addTransaction(tx: Transaction) {
     this.insertTransaction(tx);
     // it should only scroll to bottom if the user has not scrolled yet
-    if(!this.hasScrolled) {
+    if (!this.hasScrolled) {
       this.needsScroll = true;
     }
   }
@@ -200,8 +227,8 @@ export class TxListPage implements OnInit, AfterViewChecked {
     this.log.debug('remove tx');
     this.log.debug(tx);
 
-    for(let i = 0; i < this.items.length; i++) {
-      if(this.items[i].tx.id === tx.id) {
+    for (let i = 0; i < this.items.length; i++) {
+      if (this.items[i].tx.id === tx.id) {
         this.items.splice(i, 1);
       }
     }
@@ -211,23 +238,23 @@ export class TxListPage implements OnInit, AfterViewChecked {
   }
 
   ngAfterViewChecked() {
-    if(this.needsLittleScroll) {
+    if (this.needsLittleScroll) {
       this.scrollALittle();
       this.needsLittleScroll = false;
     }
 
-    let lastItemEditing = this.items.length && this.items[this.items.length - 1].editing;
+    let lastItemEditing =
+      this.items.length && this.items[this.items.length - 1].editing;
 
-    if(this.needsScroll || lastItemEditing) {
+    if (this.needsScroll || lastItemEditing) {
       this.scrollToBottom();
       this.needsScroll = false;
     }
 
-    if(this.scrollLastHeight) {
+    if (this.scrollLastHeight) {
       this.scrollDiffHeight();
       this.scrollLastHeight = null;
     }
-
   }
 
   onScroll() {
@@ -237,7 +264,8 @@ export class TxListPage implements OnInit, AfterViewChecked {
       scrollTop: element.scrollTop,
       scrollHeight: element.scrollHeight,
       clientHeight: element.clientHeight,
-      percent: element.scrollTop / (element.scrollHeight - element.clientHeight)
+      percent:
+        element.scrollTop / (element.scrollHeight - element.clientHeight),
     });
   }
 
@@ -260,25 +288,25 @@ export class TxListPage implements OnInit, AfterViewChecked {
   sortItems() {
     this.items.sort((a, b) => {
       // sort in ascending order
-      if(!a.tx.date) {
+      if (!a.tx.date) {
         return 1;
       }
 
-      if(!b.tx.date) {
+      if (!b.tx.date) {
         return -1;
       }
 
       let dateDiff = a.tx.date.getTime() - b.tx.date.getTime();
 
-      if(dateDiff) {
+      if (dateDiff) {
         return dateDiff;
       }
 
-      if(!a.tx.inserted) {
+      if (!a.tx.inserted) {
         return 1;
       }
 
-      if(!b.tx.inserted) {
+      if (!b.tx.inserted) {
         return -1;
       }
 
@@ -289,19 +317,19 @@ export class TxListPage implements OnInit, AfterViewChecked {
   }
 
   getTransferString(item: TxItem) {
-    if(!item.tx.id) {
+    if (!item.tx.id) {
       return '';
     }
 
     let transferAccountId = this.getTransferAccountId(item);
 
-    if(!transferAccountId) {
+    if (!transferAccountId) {
       return 'Split Transaction';
     }
 
     let transferAccount = this.accountTree.accountMap[transferAccountId];
 
-    if(!transferAccount) {
+    if (!transferAccount) {
       return 'Unidentified';
     }
 
@@ -311,10 +339,11 @@ export class TxListPage implements OnInit, AfterViewChecked {
   getTransferAccountId(item: TxItem): string {
     let transferAccountId = null;
 
-    if(item.tx.splits.length === 2) {
-      transferAccountId = item.tx.splits[0].accountId === this.account.id ?
-        item.tx.splits[1].accountId :
-        item.tx.splits[0].accountId;
+    if (item.tx.splits.length === 2) {
+      transferAccountId =
+        item.tx.splits[0].accountId === this.account.id
+          ? item.tx.splits[1].accountId
+          : item.tx.splits[0].accountId;
     }
 
     return transferAccountId;
@@ -331,10 +360,10 @@ export class TxListPage implements OnInit, AfterViewChecked {
   createTxItems(transaction: Transaction) {
     let items: TxItem[] = [];
 
-    for(let i = 0; i < transaction.splits.length; i++) {
+    for (let i = 0; i < transaction.splits.length; i++) {
       let split = transaction.splits[i];
 
-      if(split.accountId !== this.accountId) {
+      if (split.accountId !== this.accountId) {
         continue;
       }
 
@@ -342,7 +371,7 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
       item.tx = transaction;
       item.form = this.fb.group({
-        splits: this.fb.array([])
+        splits: this.fb.array([]),
       });
       item.activeSplit = split;
       item.activeSplitIndex = i;
@@ -365,8 +394,8 @@ export class TxListPage implements OnInit, AfterViewChecked {
     let items = this.createTxItems(transaction);
 
     // remove tx from list
-    for(let i = 0; i < this.items.length; i++) {
-      if(this.items[i].tx.id === transaction.id) {
+    for (let i = 0; i < this.items.length; i++) {
+      if (this.items[i].tx.id === transaction.id) {
         this.items.splice(i, 1);
       }
     }
@@ -385,14 +414,16 @@ export class TxListPage implements OnInit, AfterViewChecked {
   }
 
   updateBalances() {
-    let balance = this.account.debitBalance ? this.account.balance : -this.account.balance;
+    let balance = this.account.debitBalance
+      ? this.account.balance
+      : -this.account.balance;
 
-    for(let i = this.items.length - 1; i >= 0; i--) {
+    for (let i = this.items.length - 1; i >= 0; i--) {
       let item = this.items[i];
       item.balance = balance;
 
-      if(item.activeSplit.amount) {
-        if(this.account.debitBalance) {
+      if (item.activeSplit.amount) {
+        if (this.account.debitBalance) {
           balance -= item.activeSplit.amount;
         } else {
           balance += item.activeSplit.amount;
@@ -406,7 +437,7 @@ export class TxListPage implements OnInit, AfterViewChecked {
   }
 
   editTransaction(item: TxItem, $event) {
-    if(item.editing) {
+    if (item.editing) {
       return;
     }
 
@@ -417,7 +448,10 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
     item.editing = true;
 
-    let dateString = DateUtil.getLocalDateString(item.tx.date, this.org.timezone);
+    let dateString = DateUtil.getLocalDateString(
+      item.tx.date,
+      this.org.timezone,
+    );
 
     this.log.debug(item);
     let debit = this.getDebit(item);
@@ -425,25 +459,36 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
     let transferAccountId = this.getTransferAccountId(item);
 
-    if(item.tx.splits.length > 2) {
+    if (item.tx.splits.length > 2) {
       transferAccountId = this.account.id;
     }
 
-    item.form = new FormGroup({
-      date: new FormControl(dateString),
-      description: new FormControl(item.tx.description, {updateOn: 'change'}),
-      debit: new FormControl(debit ? debit / Math.pow(10, this.account.precision) : null),
-      credit: new FormControl(credit ? credit / Math.pow(10, this.account.precision) : null),
-      accountId: new FormControl(transferAccountId),
-      splits: this.fb.array([])
-    }, {updateOn: 'blur'});
+    item.form = new FormGroup(
+      {
+        date: new FormControl(dateString),
+        description: new FormControl(item.tx.description, {
+          updateOn: 'change',
+        }),
+        debit: new FormControl(
+          debit ? debit / Math.pow(10, this.account.precision) : null,
+        ),
+        credit: new FormControl(
+          credit ? credit / Math.pow(10, this.account.precision) : null,
+        ),
+        accountId: new FormControl(transferAccountId),
+        splits: this.fb.array([]),
+      },
+      { updateOn: 'blur' },
+    );
 
-    let valueChanges = item.form.get('debit').valueChanges
-      .merge(item.form.get('credit').valueChanges)
-      .merge(item.form.get('splits').valueChanges);
+    let valueChanges = merge(
+      item.form.get('debit').valueChanges,
+      item.form.get('credit').valueChanges,
+      item.form.get('splits').valueChanges,
+    );
 
-    valueChanges.subscribe(val => {
-      if(!val) {
+    valueChanges.subscribe((val) => {
+      if (!val) {
         return;
       }
 
@@ -452,24 +497,31 @@ export class TxListPage implements OnInit, AfterViewChecked {
       this.fillEmptySplit(item);
     });
 
-    if(item.tx.splits.length > 2) {
+    if (item.tx.splits.length > 2) {
       let splits = item.form.get('splits') as FormArray;
-      for(let split of item.tx.splits) {
-        if(split.accountId === this.accountId) {
+      for (let split of item.tx.splits) {
+        if (split.accountId === this.accountId) {
           continue;
         }
 
-        let control = new FormGroup({
-          accountId: new FormControl(split.accountId),
-          debit: new FormControl(
-            split.amount >= 0 ? split.amount / Math.pow(10, this.account.precision) : null
-          ),
-          credit: new FormControl(
-            split.amount < 0 ? -split.amount / Math.pow(10, this.account.precision) : null
-          )
-        }, {updateOn: 'blur'});
+        let control = new FormGroup(
+          {
+            accountId: new FormControl(split.accountId),
+            debit: new FormControl(
+              split.amount >= 0
+                ? split.amount / Math.pow(10, this.account.precision)
+                : null,
+            ),
+            credit: new FormControl(
+              split.amount < 0
+                ? -split.amount / Math.pow(10, this.account.precision)
+                : null,
+            ),
+          },
+          { updateOn: 'blur' },
+        );
 
-        control.valueChanges.subscribe(val => {
+        control.valueChanges.subscribe((val) => {
           this.solveEquations(item);
           this.fillEmptySplit(item);
         });
@@ -480,11 +532,20 @@ export class TxListPage implements OnInit, AfterViewChecked {
     }
 
     setTimeout(() => {
-      if($event && $event.target.className) {
+      if ($event && $event.target.className) {
         let cName = $event.target.classList[$event.target.classList.length - 1];
         try {
-          this.renderer.selectRootElement('#form' + item.tx.id + item.activeSplitIndex + ' .' + cName + ' input').focus();
-        } catch(e) {
+          this.renderer
+            .selectRootElement(
+              '#form' +
+                item.tx.id +
+                item.activeSplitIndex +
+                ' .' +
+                cName +
+                ' input',
+            )
+            .focus();
+        } catch (e) {
           // don't do anything if the element doesn't exist
         }
       }
@@ -503,14 +564,13 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
     let splits = item.form.get('splits') as FormArray;
 
-    if(splits.length === 1) {
+    if (splits.length === 1) {
       item.form.patchValue({
-        accountId: splits.at(0).get('accountId').value
+        accountId: splits.at(0).get('accountId').value,
       });
     }
 
-    splits.removeAt(index); 
-
+    splits.removeAt(index);
   }
 
   addSplit(item: TxItem) {
@@ -523,18 +583,21 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
     let splits = item.form.get('splits') as FormArray;
 
-    if(splits.length === 0) {
+    if (splits.length === 0) {
       this.addFirstSplit(item);
       return;
     }
 
-    let control = new FormGroup({
-      accountId: new FormControl(),
-      debit: new FormControl(),
-      credit: new FormControl()
-    }, {updateOn: 'blur'});
+    let control = new FormGroup(
+      {
+        accountId: new FormControl(),
+        debit: new FormControl(),
+        credit: new FormControl(),
+      },
+      { updateOn: 'blur' },
+    );
 
-    control.valueChanges.subscribe(val => {
+    control.valueChanges.subscribe((val) => {
       this.solveEquations(item);
       this.fillEmptySplit(item);
     });
@@ -543,8 +606,13 @@ export class TxListPage implements OnInit, AfterViewChecked {
     this.fillEmptySplit(item);
     // TODO how to focus newly created split in non-hacky way?
     setTimeout(() => {
-      let rows: HTMLElement[] = Array.from(document.querySelectorAll('#form' + item.tx.id + item.activeSplitIndex + ' .row'));
-      let input: any = rows[rows.length - 1].querySelectorAll('.debit input')[0];
+      let rows: HTMLElement[] = Array.from(
+        document.querySelectorAll(
+          '#form' + item.tx.id + item.activeSplitIndex + ' .row',
+        ),
+      );
+      let input: any =
+        rows[rows.length - 1].querySelectorAll('.debit input')[0];
       input && input.focus();
     }, 10);
   }
@@ -557,16 +625,19 @@ export class TxListPage implements OnInit, AfterViewChecked {
     let credit = item.form.get('credit').value || null;
 
     item.form.patchValue({
-      accountId: this.account.id
+      accountId: this.account.id,
     });
 
-    let control = new FormGroup({
-      accountId: new FormControl(accountId),
-      debit: new FormControl(credit),
-      credit: new FormControl(debit)
-    }, {updateOn: 'blur'});
+    let control = new FormGroup(
+      {
+        accountId: new FormControl(accountId),
+        debit: new FormControl(credit),
+        credit: new FormControl(debit),
+      },
+      { updateOn: 'blur' },
+    );
 
-    control.valueChanges.subscribe(val => {
+    control.valueChanges.subscribe((val) => {
       this.solveEquations(item);
       this.fillEmptySplit(item);
     });
@@ -585,25 +656,26 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
     let amount = item.form.get('debit').value - item.form.get('credit').value;
 
-    if(amount === 0) {
+    if (amount === 0) {
       emptySplit = item.form;
       this.log.debug('base split is empty');
     }
 
-    for(let i = 0; i < splits.length; i++) {
+    for (let i = 0; i < splits.length; i++) {
       let split = splits.at(i);
       amount += parseFloat(split.get('debit').value) || 0;
       amount -= parseFloat(split.get('credit').value) || 0;
 
-      if(!split.get('debit').value && !split.get('credit').value) {
+      if (!split.get('debit').value && !split.get('credit').value) {
         emptySplit = split;
       }
     }
 
-    if(emptySplit) {
+    if (emptySplit) {
       let precision = 2;
 
-      let account = this.accountTree.accountMap[emptySplit.get('accountId').value];
+      let account =
+        this.accountTree.accountMap[emptySplit.get('accountId').value];
       if (account) {
         precision = account.precision;
       }
@@ -611,17 +683,19 @@ export class TxListPage implements OnInit, AfterViewChecked {
       amount = this.round(-amount, precision);
       this.log.debug('amount', amount);
 
-      if(amount) {
+      if (amount) {
         emptySplit.patchValue({
-          debit: amount >= 0 ? amount  : '',
-          credit: amount < 0 ? -amount : ''
+          debit: amount >= 0 ? amount : '',
+          credit: amount < 0 ? -amount : '',
         });
       }
     }
   }
 
   round(amount, precision) {
-    return Math.round(amount * Math.pow(10, precision)) / Math.pow(10, precision);
+    return (
+      Math.round(amount * Math.pow(10, precision)) / Math.pow(10, precision)
+    );
   }
 
   submit(item: TxItem) {
@@ -630,13 +704,16 @@ export class TxListPage implements OnInit, AfterViewChecked {
     this.log.debug('submit!');
     this.log.debug(item.form.value);
 
-    if(item.form.pristine) {
+    if (item.form.pristine) {
       item.editing = false;
       return;
     }
 
     let date = item.tx.id ? item.tx.date : new Date();
-    let formDate = DateUtil.getDateFromLocalDateString(item.form.value.date, this.org.timezone);
+    let formDate = DateUtil.getDateFromLocalDateString(
+      item.form.value.date,
+      this.org.timezone,
+    );
 
     date = DateUtil.computeTransactionDate(formDate, date, this.org.timezone);
 
@@ -644,73 +721,88 @@ export class TxListPage implements OnInit, AfterViewChecked {
       id: item.tx.id,
       date: date,
       description: item.form.value.description,
-      splits: []
+      splits: [],
     });
 
-    if(!item.form.value.splits.length) {
-      let amount = item.form.value.debit ? parseFloat(item.form.value.debit) : -parseFloat(item.form.value.credit);
+    if (!item.form.value.splits.length) {
+      let amount = item.form.value.debit
+        ? parseFloat(item.form.value.debit)
+        : -parseFloat(item.form.value.credit);
       amount = Math.round(amount * Math.pow(10, this.account.precision));
 
-      tx.splits.push(new Split({
-        accountId: this.account.id,
-        amount: amount,
-        nativeAmount: amount
-      }));
+      tx.splits.push(
+        new Split({
+          accountId: this.account.id,
+          amount: amount,
+          nativeAmount: amount,
+        }),
+      );
 
-      tx.splits.push(new Split({
-        accountId: item.form.value.accountId,
-        amount: -amount,
-        nativeAmount: -amount
-      }));
+      tx.splits.push(
+        new Split({
+          accountId: item.form.value.accountId,
+          amount: -amount,
+          nativeAmount: -amount,
+        }),
+      );
     } else {
-      let amount = item.form.value.debit ? parseFloat(item.form.value.debit) : -parseFloat(item.form.value.credit);
+      let amount = item.form.value.debit
+        ? parseFloat(item.form.value.debit)
+        : -parseFloat(item.form.value.credit);
       amount = Math.round(amount * Math.pow(10, this.account.precision));
 
-      tx.splits.push(new Split({
-        accountId: item.form.value.accountId,
-        amount: amount,
-        nativeAmount: amount
-      }));
+      tx.splits.push(
+        new Split({
+          accountId: item.form.value.accountId,
+          amount: amount,
+          nativeAmount: amount,
+        }),
+      );
     }
 
-    for(let i = 0; i < item.form.value.splits.length; i++) {
+    for (let i = 0; i < item.form.value.splits.length; i++) {
       let split = item.form.value.splits[i];
       let account = this.accountTree.accountMap[split.accountId];
 
-      if(!account) {
+      if (!account) {
         this.error = new AppError('Invalid account');
         return;
       }
 
-      let amount = split.debit ? parseFloat(split.debit) : -parseFloat(split.credit);
+      let amount = split.debit
+        ? parseFloat(split.debit)
+        : -parseFloat(split.credit);
       amount = Math.round(amount * Math.pow(10, account.precision));
 
-      tx.splits.push(new Split({
-        accountId: split.accountId,
-        amount: amount,
-        nativeAmount: amount
-      }));
+      tx.splits.push(
+        new Split({
+          accountId: split.accountId,
+          amount: amount,
+          nativeAmount: amount,
+        }),
+      );
     }
 
     this.log.debug(tx);
 
-    if(tx.id) {
+    if (tx.id) {
       // update tx
       let oldId = tx.id;
       tx.id = Util.newGuid();
 
-      this.txService.putTransaction(oldId, tx)
-        .subscribe(tx => {
+      this.txService.putTransaction(oldId, tx).subscribe({
+        next: (tx) => {
           // do nothing
-
-        }, error => {
+        },
+        error: (error) => {
           this.error = error;
-        });
+        },
+      });
     } else {
       // new tx
 
       let splits = item.form.get('splits') as FormArray;
-      while(splits.length) {
+      while (splits.length) {
         splits.removeAt(0);
       }
 
@@ -718,14 +810,16 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
       let newTx = new Transaction({
         date: new Date(),
-        splits: []
+        splits: [],
       });
 
       DateUtil.setEndOfDay(newTx.date, this.org.timezone);
 
-      newTx.splits.push(new Split({
-        accountId: this.account.id
-      }));
+      newTx.splits.push(
+        new Split({
+          accountId: this.account.id,
+        }),
+      );
       newTx.splits.push(new Split());
       item.tx = newTx;
 
@@ -735,41 +829,50 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
       tx.id = Util.newGuid();
 
-      this.txService.newTransaction(tx)
-        .subscribe(tx => {
+      this.txService.newTransaction(tx).subscribe({
+        next: (tx) => {
           // do nothing
-
-        }, error => {
+        },
+        error: (error) => {
           this.error = error;
-        });
+        },
+      });
     }
   }
 
   deleteTransaction(item) {
-    this.modalService.open(this.confirmDeleteModal).result.then((result) => {
-      this.log.debug('delete');
-      this.txService.deleteTransaction(item.tx.id)
-        .subscribe(() => {
-          this.log.debug('successfully deleted transaction ' + item.tx.id);
-        }, error => {
-          this.error = error;
-        })
-    }, (reason) => {
-      this.log.debug('cancel delete');
-    });
+    this.modalService.open(this.confirmDeleteModal).result.then(
+      (result) => {
+        this.log.debug('delete');
+        this.txService.deleteTransaction(item.tx.id).subscribe({
+          next: () => {
+            this.log.debug('successfully deleted transaction ' + item.tx.id);
+          },
+          error: (error) => {
+            this.error = error;
+          },
+        });
+      },
+      (reason) => {
+        this.log.debug('cancel delete');
+      },
+    );
   }
 
   advancedEdit(item) {
-    let modal = this.modalService.open(AdvancedEdit, {size: 'lg'});
+    let modal = this.modalService.open(AdvancedEditComponent, { size: 'lg' });
 
     modal.componentInstance.setData(item, this.accountTree);
 
-    modal.result.then((result) => {
-      this.log.debug('advanced edit save');
-      this.log.debug(item.form);
-    }, (reason) => {
-      this.log.debug('cancel advanced edit');
-    });
+    modal.result.then(
+      (result) => {
+        this.log.debug('advanced edit save');
+        this.log.debug(item.form);
+      },
+      (reason) => {
+        this.log.debug('cancel advanced edit');
+      },
+    );
   }
 
   onEnter(item, $event) {
@@ -782,33 +885,47 @@ export class TxListPage implements OnInit, AfterViewChecked {
     let originalDebit = item.form.get('debit').value;
     let originalCredit = item.form.get('credit').value;
     let precision = this.account.precision;
-    let debit = originalDebit ? this.round(this.solve('' + originalDebit), precision) : '';
-    let credit = originalCredit ? this.round(this.solve('' + originalCredit), precision) : '';
+    let debit = originalDebit
+      ? this.round(this.solve('' + originalDebit), precision)
+      : '';
+    let credit = originalCredit
+      ? this.round(this.solve('' + originalCredit), precision)
+      : '';
 
-    if((originalDebit && debit !== originalDebit) || (originalCredit && credit !== originalCredit)) {
+    if (
+      (originalDebit && debit !== originalDebit) ||
+      (originalCredit && credit !== originalCredit)
+    ) {
       this.log.debug('patch', debit, credit);
       this.log.debug('original', originalDebit, originalCredit);
       item.form.patchValue({
         debit: debit,
-        credit: credit
+        credit: credit,
       });
     }
 
     let splits = item.form.get('splits') as FormArray;
 
-    for(let i = 0; i < splits.length; i++) {
+    for (let i = 0; i < splits.length; i++) {
       let split = splits.at(i);
       let originalDebit = split.get('debit').value;
       let originalCredit = split.get('credit').value;
-      let debit = originalDebit ? this.round(this.solve('' + originalDebit), precision) : '';
-      let credit = originalCredit ? this.round(this.solve('' + originalCredit), precision) : '';
+      let debit = originalDebit
+        ? this.round(this.solve('' + originalDebit), precision)
+        : '';
+      let credit = originalCredit
+        ? this.round(this.solve('' + originalCredit), precision)
+        : '';
 
-      if((originalDebit && debit !== originalDebit) || (originalCredit && credit !== originalCredit)) {
+      if (
+        (originalDebit && debit !== originalDebit) ||
+        (originalCredit && credit !== originalCredit)
+      ) {
         this.log.debug('patch', debit, credit);
         this.log.debug('original', originalDebit, originalCredit);
         split.patchValue({
           debit: debit,
-          credit: credit
+          credit: credit,
         });
       }
     }
@@ -816,19 +933,19 @@ export class TxListPage implements OnInit, AfterViewChecked {
 
   solve(input: string) {
     // first pass: +-
-    for(let i = input.length - 1; i >= 0; i--) {
-      if(input.charAt(i) === '+') {
+    for (let i = input.length - 1; i >= 0; i--) {
+      if (input.charAt(i) === '+') {
         return this.solve(input.slice(0, i)) + this.solve(input.slice(i + 1));
-      } else if(input.charAt(i) === '-') {
+      } else if (input.charAt(i) === '-') {
         return this.solve(input.slice(0, i)) - this.solve(input.slice(i + 1));
       }
     }
 
     // second pass: */
-    for(let i = input.length - 1; i >= 0; i--) {
-      if(input.charAt(i) === '*') {
+    for (let i = input.length - 1; i >= 0; i--) {
+      if (input.charAt(i) === '*') {
         return this.solve(input.slice(0, i)) * this.solve(input.slice(i + 1));
-      } else if(input.charAt(i) === '/') {
+      } else if (input.charAt(i) === '/') {
         return this.solve(input.slice(0, i)) / this.solve(input.slice(i + 1));
       }
     }
@@ -839,20 +956,25 @@ export class TxListPage implements OnInit, AfterViewChecked {
   autocomplete(item: TxItem, tx: Transaction) {
     this.log.debug('chose tx', tx);
 
-    let formDate = DateUtil.getDateFromLocalDateString(item.form.value.date, this.org.timezone);
-    item.tx = new Transaction(
-      {
-        id: item.tx.id,
-        date: DateUtil.computeTransactionDate(formDate, new Date(), this.org.timezone),
-        description: tx.description,
-        splits: tx.splits
-      }
+    let formDate = DateUtil.getDateFromLocalDateString(
+      item.form.value.date,
+      this.org.timezone,
     );
+    item.tx = new Transaction({
+      id: item.tx.id,
+      date: DateUtil.computeTransactionDate(
+        formDate,
+        new Date(),
+        this.org.timezone,
+      ),
+      description: tx.description,
+      splits: tx.splits,
+    });
 
-    for(let i = 0; i < tx.splits.length; i++) {
+    for (let i = 0; i < tx.splits.length; i++) {
       let split = tx.splits[i];
 
-      if(split.accountId !== this.accountId) {
+      if (split.accountId !== this.accountId) {
         continue;
       }
 
@@ -863,8 +985,22 @@ export class TxListPage implements OnInit, AfterViewChecked {
     this.log.debug(tx);
 
     item.editing = false;
-    this.editTransaction(item, {target: {className: 'description', classList: ['description']}});
+    this.editTransaction(item, {
+      target: { className: 'description', classList: ['description'] },
+    });
     item.form.markAsDirty();
   }
+}
+/*
+function subscribe(
+  arg0: (tx: any) => void,
+): import('rxjs').OperatorFunction<Transaction, unknown> {
+  throw new Error('Function not implemented.');
+}
+*/
 
+function subscribe<T>(
+  arg0: (tx: Transaction) => void,
+): MonoTypeOperatorFunction<Transaction> {
+  throw new Error('Function not implemented.');
 }

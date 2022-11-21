@@ -1,4 +1,9 @@
-import { Component, ViewEncapsulation, ViewChild, ElementRef } from '@angular/core';
+import {
+  Component,
+  ViewEncapsulation,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import {
   FormGroup,
@@ -7,7 +12,7 @@ import {
   FormBuilder,
   FormArray,
   AbstractControl,
-  ValidationErrors
+  ValidationErrors,
 } from '@angular/forms';
 import { AccountService } from '../core/account.service';
 import { TransactionService } from '../core/transaction.service';
@@ -19,15 +24,15 @@ import { AppError } from '../shared/error';
 import { Transaction, Split } from '../shared/transaction';
 import { Logger } from '../core/logger';
 import { Org } from '../shared/org';
+import { take } from 'rxjs';
 
 @Component({
   selector: 'app-txnew',
   templateUrl: 'new.html',
   styleUrls: ['./new.scss'],
-  encapsulation: ViewEncapsulation.None
+  encapsulation: ViewEncapsulation.None,
 })
-export class NewTransactionPage {
-
+export class NewTransactionPageComponent {
   public form: FormGroup;
   public type: string;
   public typeDescription: string;
@@ -49,7 +54,7 @@ export class NewTransactionPage {
   public accountMap: any;
   public org;
   @ViewChild('acc') acc: any;
-  @ViewChild('amount') amount: ElementRef
+  @ViewChild('amount') amount: ElementRef;
 
   // TODO This code needs to be cleaned up
 
@@ -59,7 +64,8 @@ export class NewTransactionPage {
     private txService: TransactionService,
     private orgService: OrgService,
     private fb: FormBuilder,
-    private log: Logger) {
+    private log: Logger,
+  ) {
     this.numAccountsShown = 3;
     this.org = this.orgService.getCurrentOrg();
 
@@ -79,22 +85,25 @@ export class NewTransactionPage {
     this.addSplit();
     this.addSplit();
 
-    this.accountService.getAccountTree().take(1).subscribe(tree => {
-      this.accountTree = tree;
-      this.accountMap = tree.accountMap;
-      this.selectAccounts = tree.getFlattenedAccounts().filter(account => {
-        return !account.children.length;
+    this.accountService
+      .getAccountTree()
+      .pipe(take(1))
+      .subscribe((tree) => {
+        this.accountTree = tree;
+        this.accountMap = tree.accountMap;
+        this.selectAccounts = tree.getFlattenedAccounts().filter((account) => {
+          return !account.children.length;
+        });
+
+        this.getExpenseAccounts();
+        this.getIncomeAccounts();
+        this.getPaymentAccounts();
+        this.getAssetAccounts();
+
+        this.openingBalances = tree.getAccountByName('Opening Balances', 2);
       });
 
-      this.getExpenseAccounts();
-      this.getIncomeAccounts();
-      this.getPaymentAccounts();
-      this.getAssetAccounts();
-
-      this.openingBalances = tree.getAccountByName('Opening Balances', 2);
-    });
-
-    this.form.get('firstAccountPrimary').valueChanges.subscribe(val => {
+    this.form.get('firstAccountPrimary').valueChanges.subscribe((val) => {
       if (val === 'other') {
         return;
       }
@@ -106,12 +115,12 @@ export class NewTransactionPage {
 
       if (splits.length > 0) {
         splits.at(0).patchValue({
-          accountId: val
+          accountId: val,
         });
       }
     });
 
-    this.form.get('firstAccountSecondary').valueChanges.subscribe(val => {
+    this.form.get('firstAccountSecondary').valueChanges.subscribe((val) => {
       if (this.form.value.type === 'openingBalance') {
         this.acc.collapse('toggle-1');
         this.acc.expand('toggle-3');
@@ -119,7 +128,7 @@ export class NewTransactionPage {
         this.form.patchValue({
           description: 'Opening Balance',
           firstAccountPrimary: 'other',
-          secondAccountPrimary: this.openingBalances.id
+          secondAccountPrimary: this.openingBalances.id,
         });
         this.focusAmount();
         let splits = this.form.get('splits') as FormArray;
@@ -128,10 +137,10 @@ export class NewTransactionPage {
           let firstAccount = this.getFirstAccount();
           let secondAccount = this.openingBalances;
           splits.at(0).patchValue({
-            accountId: firstAccount.id
+            accountId: firstAccount.id,
           });
           splits.at(1).patchValue({
-            accountId: secondAccount.id
+            accountId: secondAccount.id,
           });
         }
         return;
@@ -144,12 +153,12 @@ export class NewTransactionPage {
 
       if (splits.length > 0) {
         splits.at(0).patchValue({
-          accountId: val
+          accountId: val,
         });
       }
     });
 
-    this.form.get('secondAccountPrimary').valueChanges.subscribe(val => {
+    this.form.get('secondAccountPrimary').valueChanges.subscribe((val) => {
       if (val === 'other') {
         return;
       }
@@ -163,12 +172,12 @@ export class NewTransactionPage {
 
       if (splits.length > 1) {
         splits.at(1).patchValue({
-          accountId: val
+          accountId: val,
         });
       }
     });
 
-    this.form.get('secondAccountSecondary').valueChanges.subscribe(val => {
+    this.form.get('secondAccountSecondary').valueChanges.subscribe((val) => {
       this.acc.collapse('toggle-2');
       this.acc.expand('toggle-3');
       this.acc.expand('toggle-4');
@@ -178,45 +187,45 @@ export class NewTransactionPage {
 
       if (splits.length > 1) {
         splits.at(1).patchValue({
-          accountId: val
+          accountId: val,
         });
       }
     });
 
-    this.form.get('amount').valueChanges.subscribe(amount => {
+    this.form.get('amount').valueChanges.subscribe((amount) => {
       let type = this.form.get('type').value;
       let splits = this.form.get('splits') as FormArray;
 
       if (type === 'expense') {
         splits.at(0).patchValue({
-          debit: amount
+          debit: amount,
         });
         splits.at(1).patchValue({
-          credit: amount
+          credit: amount,
         });
       } else if (type === 'income') {
         splits.at(0).patchValue({
-          credit: amount
+          credit: amount,
         });
         splits.at(1).patchValue({
-          debit: amount
+          debit: amount,
         });
       } else if (type === 'openingBalance') {
         let firstAccount = this.getFirstAccount();
 
         if (firstAccount.debitBalance) {
           splits.at(0).patchValue({
-            debit: amount
+            debit: amount,
           });
           splits.at(1).patchValue({
-            credit: amount
+            credit: amount,
           });
         } else {
           splits.at(0).patchValue({
-            credit: amount
+            credit: amount,
           });
           splits.at(1).patchValue({
-            debit: amount
+            debit: amount,
           });
         }
       }
@@ -227,7 +236,10 @@ export class NewTransactionPage {
     this.error = null;
 
     let date = new Date();
-    let formDate = DateUtil.getDateFromLocalDateString(this.form.value.date, this.org.timezone);
+    let formDate = DateUtil.getDateFromLocalDateString(
+      this.form.value.date,
+      this.org.timezone,
+    );
 
     date = DateUtil.computeTransactionDate(formDate, date, this.org.timezone);
 
@@ -235,7 +247,7 @@ export class NewTransactionPage {
       id: Util.newGuid(),
       description: this.form.value.description,
       date: date,
-      splits: []
+      splits: [],
     });
 
     for (let i = 0; i < this.form.value.splits.length; i++) {
@@ -247,31 +259,37 @@ export class NewTransactionPage {
         return;
       }
 
-      let amount = split.debit ? parseFloat(split.debit) : -parseFloat(split.credit);
+      let amount = split.debit
+        ? parseFloat(split.debit)
+        : -parseFloat(split.credit);
       amount = Math.round(amount * Math.pow(10, account.precision));
 
-      tx.splits.push(new Split({
-        accountId: split.accountId,
-        amount: amount,
-        nativeAmount: amount
-      }));
+      tx.splits.push(
+        new Split({
+          accountId: split.accountId,
+          amount: amount,
+          nativeAmount: amount,
+        }),
+      );
     }
 
     this.log.debug(tx);
 
-    this.txService.newTransaction(tx)
-      .subscribe(tx => {
+    this.txService.newTransaction(tx).subscribe({
+      next: (tx) => {
         this.router.navigate(['/dashboard']);
-      }, error => {
+      },
+      error: (error) => {
         this.error = error;
-      });
+      },
+    });
   }
 
   getExpenseAccounts() {
     // Get most used expense accounts
 
     let expenseAccounts = this.accountTree.getAccountAtoms(
-      this.accountTree.getAccountByName('Expenses', 1)
+      this.accountTree.getAccountByName('Expenses', 1),
     );
 
     this.processAccounts('expenseAccounts', expenseAccounts, 2);
@@ -281,7 +299,7 @@ export class NewTransactionPage {
     // Get most used income accounts
 
     let incomeAccounts = this.accountTree.getAccountAtoms(
-      this.accountTree.getAccountByName('Income', 1)
+      this.accountTree.getAccountByName('Income', 1),
     );
 
     this.processAccounts('incomeAccounts', incomeAccounts, 2);
@@ -291,11 +309,11 @@ export class NewTransactionPage {
     // Get most used asset / liability accounts
 
     let assetAccounts = this.accountTree.getAccountAtoms(
-      this.accountTree.getAccountByName('Assets', 1)
+      this.accountTree.getAccountByName('Assets', 1),
     );
 
     let liabilityAccounts = this.accountTree.getAccountAtoms(
-      this.accountTree.getAccountByName('Liabilities', 1)
+      this.accountTree.getAccountByName('Liabilities', 1),
     );
 
     let paymentAccounts = assetAccounts.concat(liabilityAccounts);
@@ -307,7 +325,7 @@ export class NewTransactionPage {
     // Get most used asset accounts
 
     let assetAccounts = this.accountTree.getAccountAtoms(
-      this.accountTree.getAccountByName('Assets', 1)
+      this.accountTree.getAccountByName('Assets', 1),
     );
 
     this.processAccounts('assetAccounts', assetAccounts, 3);
@@ -323,8 +341,8 @@ export class NewTransactionPage {
         id: account.id,
         name: account.name,
         label: this.accountTree.getAccountLabel(account, depth),
-        hidden: i < this.numAccountsShown ? false : true
-      }
+        hidden: i < this.numAccountsShown ? false : true,
+      };
     });
 
     let firstAccounts = dataWithLabels.slice(0, this.numAccountsShown);
@@ -365,7 +383,7 @@ export class NewTransactionPage {
     let type = this.form.value.type;
 
     if (type) {
-      switch(type) {
+      switch (type) {
         case 'expense':
           str += 'Expense';
           break;
@@ -397,7 +415,10 @@ export class NewTransactionPage {
   }
 
   getFirstAccount() {
-    if (this.form.value.firstAccountPrimary && this.form.value.firstAccountPrimary !== 'other') {
+    if (
+      this.form.value.firstAccountPrimary &&
+      this.form.value.firstAccountPrimary !== 'other'
+    ) {
       return this.accountTree.accountMap[this.form.value.firstAccountPrimary];
     }
 
@@ -413,13 +434,19 @@ export class NewTransactionPage {
       case 'income':
         return -this.form.value.amount * Math.pow(10, account.precision);
       case 'openingBalance':
-        return this.form.value.amount * Math.pow(10, account.precision)
-          * (account.debitBalance ? 1 : -1);
+        return (
+          this.form.value.amount *
+          Math.pow(10, account.precision) *
+          (account.debitBalance ? 1 : -1)
+        );
     }
   }
 
   getSecondAccount() {
-    if (this.form.value.secondAccountPrimary && this.form.value.secondAccountPrimary !== 'other') {
+    if (
+      this.form.value.secondAccountPrimary &&
+      this.form.value.secondAccountPrimary !== 'other'
+    ) {
       return this.accountTree.accountMap[this.form.value.secondAccountPrimary];
     }
 
@@ -436,21 +463,27 @@ export class NewTransactionPage {
       case 'income':
         return this.form.value.amount * Math.pow(10, secondAccount.precision);
       case 'openingBalance':
-        return this.form.value.amount * Math.pow(10, secondAccount.precision)
-          * (firstAccount.debitBalance ? -1 : 1);
+        return (
+          this.form.value.amount *
+          Math.pow(10, secondAccount.precision) *
+          (firstAccount.debitBalance ? -1 : 1)
+        );
     }
   }
 
   addSplit() {
     let splits = this.form.get('splits') as FormArray;
 
-    let control = new FormGroup({
-      accountId: new FormControl(),
-      debit: new FormControl(),
-      credit: new FormControl()
-    }, { updateOn: 'blur' });
+    let control = new FormGroup(
+      {
+        accountId: new FormControl(),
+        debit: new FormControl(),
+        credit: new FormControl(),
+      },
+      { updateOn: 'blur' },
+    );
 
-    control.valueChanges.subscribe(val => {
+    control.valueChanges.subscribe((val) => {
       this.fillEmptySplit();
     });
     splits.push(control);
@@ -480,7 +513,8 @@ export class NewTransactionPage {
       let account = null;
 
       if (this.accountTree && accountId) {
-        account = this.accountTree.accountMap[emptySplit.get('accountId').value];
+        account =
+          this.accountTree.accountMap[emptySplit.get('accountId').value];
       }
 
       if (account) {
@@ -492,14 +526,16 @@ export class NewTransactionPage {
       if (amount) {
         emptySplit.patchValue({
           debit: amount >= 0 ? amount : '',
-          credit: amount < 0 ? -amount : ''
+          credit: amount < 0 ? -amount : '',
         });
       }
     }
   }
 
   round(amount, precision) {
-    return Math.round(amount * Math.pow(10, precision)) / Math.pow(10, precision);
+    return (
+      Math.round(amount * Math.pow(10, precision)) / Math.pow(10, precision)
+    );
   }
 
   focusAmount() {
@@ -510,6 +546,4 @@ export class NewTransactionPage {
       }
     }, 1);
   }
-
-
 }

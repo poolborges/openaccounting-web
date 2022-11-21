@@ -1,13 +1,13 @@
 import { Component, ViewChild, ElementRef } from '@angular/core';
 import { Logger } from '../core/logger';
 import { Router } from '@angular/router';
-import { 
+import {
   FormGroup,
   FormControl,
   Validators,
   FormBuilder,
   AbstractControl,
-  ValidationErrors
+  ValidationErrors,
 } from '@angular/forms';
 import { AccountService } from '../core/account.service';
 import { OrgService } from '../core/org.service';
@@ -19,19 +19,16 @@ import { AppError } from '../shared/error';
 import { Util } from '../shared/util';
 import { DateUtil } from '../shared/dateutil';
 import { NgbModal, ModalDismissReasons } from '@ng-bootstrap/ng-bootstrap';
-import { ReconcileModal } from './reconcile-modal';
+import { ReconcileModalComponent } from './reconcile-modal';
 import { Reconciliation } from './reconciliation';
 import { SessionService } from '../core/session.service';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/from';
-import 'rxjs/add/operator/mergeMap';
+import { from, mergeMap, Observable } from 'rxjs';
 
 @Component({
   selector: 'app-reconcile',
-  templateUrl: 'reconcile.html'
+  templateUrl: 'reconcile.html',
 })
-export class ReconcilePage {
-
+export class ReconcilePageComponent {
   public accountForm: FormGroup;
   public newReconcile: FormGroup;
   public selectAccounts: any[];
@@ -51,21 +48,21 @@ export class ReconcilePage {
     private txService: TransactionService,
     private fb: FormBuilder,
     private modalService: NgbModal,
-    private sessionService: SessionService) {
-
+    private sessionService: SessionService,
+  ) {
     this.org = this.orgService.getCurrentOrg();
     this.accountForm = fb.group({
-      'accountId': [null, Validators.required]
+      accountId: [null, Validators.required],
     });
 
     this.newReconcile = fb.group({
-      'startDate': ['', Validators.required],
-      'startBalance': [{value: 0, disabled: true}, Validators.required],
-      'endDate': ['', Validators.required],
-      'endBalance': [0, Validators.required]
+      startDate: ['', Validators.required],
+      startBalance: [{ value: 0, disabled: true }, Validators.required],
+      endDate: ['', Validators.required],
+      endBalance: [0, Validators.required],
     });
 
-    this.accountService.getAccountTree().subscribe(tree => {
+    this.accountService.getAccountTree().subscribe((tree) => {
       this.accountTree = tree;
       this.selectAccounts = tree.getFlattenedAccounts();
     });
@@ -74,7 +71,7 @@ export class ReconcilePage {
   onChooseAccount() {
     let account = this.accountTree.accountMap[this.accountForm.value.accountId];
 
-    if(!account) {
+    if (!account) {
       this.error = new AppError('Invalid account');
       return;
     }
@@ -88,34 +85,48 @@ export class ReconcilePage {
     let value = this.newReconcile.getRawValue();
 
     let rec = new Reconciliation();
-    rec.startDate = DateUtil.getDateFromLocalDateString(value.startDate, this.org.timezone);
-    rec.endDate = DateUtil.getDateFromLocalDateString(value.endDate, this.org.timezone);
-    rec.startBalance = Math.round(parseFloat(value.startBalance) * Math.pow(10, this.account.precision));
-    rec.endBalance = Math.round(parseFloat(value.endBalance) * Math.pow(10, this.account.precision));
+    rec.startDate = DateUtil.getDateFromLocalDateString(
+      value.startDate,
+      this.org.timezone,
+    );
+    rec.endDate = DateUtil.getDateFromLocalDateString(
+      value.endDate,
+      this.org.timezone,
+    );
+    rec.startBalance = Math.round(
+      parseFloat(value.startBalance) * Math.pow(10, this.account.precision),
+    );
+    rec.endBalance = Math.round(
+      parseFloat(value.endBalance) * Math.pow(10, this.account.precision),
+    );
 
     this.log.debug(rec);
 
-    let modal = this.modalService.open(ReconcileModal, {size: 'lg'});
+    let modal = this.modalService.open(ReconcileModalComponent, { size: 'lg' });
 
     modal.componentInstance.setData(this.account, rec, this.unreconciledTxs);
 
-    modal.result.then((txs) => {
-      this.log.debug('reconcile modal save');
-      rec.txs = txs;
+    modal.result.then(
+      (txs) => {
+        this.log.debug('reconcile modal save');
+        rec.txs = txs;
 
-      this.pastReconciliations.unshift(rec);
+        this.pastReconciliations.unshift(rec);
 
-      this.newReconcile.patchValue(
-        {
-          startDate: DateUtil.getLocalDateString(rec.endDate, this.org.timezone),
+        this.newReconcile.patchValue({
+          startDate: DateUtil.getLocalDateString(
+            rec.endDate,
+            this.org.timezone,
+          ),
           startBalance: rec.endBalance / Math.pow(10, this.account.precision),
           endBalance: 0,
-          endDate: ''
-        }
-      );
-    }, (reason) => {
-      this.log.debug('cancel reconcile modal');
-    });
+          endDate: '',
+        });
+      },
+      (reason) => {
+        this.log.debug('cancel reconcile modal');
+      },
+    );
   }
 
   processTransactions() {
@@ -131,166 +142,192 @@ export class ReconcilePage {
     this.unreconciledTxs = [];
     this.pastReconciliations = [];
 
-    this.txService.getTransactionsByAccount(this.account.id).subscribe(txs => {
-      let reconcileMap: {[date: number]: Reconciliation} = {};
+    this.txService
+      .getTransactionsByAccount(this.account.id)
+      .subscribe((txs) => {
+        let reconcileMap: { [date: number]: Reconciliation } = {};
 
-      let firstStartDate: Date = null;
-      let firstEndDate: Date = null;
+        let firstStartDate: Date = null;
+        let firstEndDate: Date = null;
 
-      txs.forEach(tx => {
-        if(!firstStartDate || (!firstEndDate && tx.date < firstStartDate)) {
-          firstStartDate = tx.date;
-        }
+        txs.forEach((tx) => {
+          if (!firstStartDate || (!firstEndDate && tx.date < firstStartDate)) {
+            firstStartDate = tx.date;
+          }
 
-        let data = tx.getData();
+          let data = tx.getData();
 
-        if(!data.reconciledSplits) {
-          this.unreconciledTxs.push(tx);
-          return;
-        }
-
-        let reconciled = true;
-        let splitIndexes = Object.keys(data.reconciledSplits).map(index => parseInt(index));
-
-        tx.splits.forEach((split, index) => {
-          if(split.accountId !== this.account.id) {
+          if (!data.reconciledSplits) {
+            this.unreconciledTxs.push(tx);
             return;
           }
 
-          if(splitIndexes.indexOf(index) === -1) {
-            reconciled = false;
-            return;
-          }
+          let reconciled = true;
+          let splitIndexes = Object.keys(data.reconciledSplits).map((index) =>
+            parseInt(index),
+          );
 
-          let endDate = new Date(data.reconciledSplits[index]);
+          tx.splits.forEach((split, index) => {
+            if (split.accountId !== this.account.id) {
+              return;
+            }
 
-          if(!firstEndDate || endDate < firstEndDate) {
-            firstEndDate = endDate;
-            firstStartDate = new Date(tx.date);
-          }
+            if (splitIndexes.indexOf(index) === -1) {
+              reconciled = false;
+              return;
+            }
 
-          if(endDate.getTime() === firstEndDate.getTime() && tx.date < firstStartDate) {
-            firstStartDate = new Date(tx.date);
-          }
+            let endDate = new Date(data.reconciledSplits[index]);
 
-          if(!reconcileMap[endDate.getTime()]) {
-            reconcileMap[endDate.getTime()] = new Reconciliation();
-            reconcileMap[endDate.getTime()].endDate = endDate;
-            reconcileMap[endDate.getTime()].net = 0;
-          }
+            if (!firstEndDate || endDate < firstEndDate) {
+              firstEndDate = endDate;
+              firstStartDate = new Date(tx.date);
+            }
 
-          let r = reconcileMap[endDate.getTime()];
+            if (
+              endDate.getTime() === firstEndDate.getTime() &&
+              tx.date < firstStartDate
+            ) {
+              firstStartDate = new Date(tx.date);
+            }
 
-          r.txs.push(tx);
+            if (!reconcileMap[endDate.getTime()]) {
+              reconcileMap[endDate.getTime()] = new Reconciliation();
+              reconcileMap[endDate.getTime()].endDate = endDate;
+              reconcileMap[endDate.getTime()].net = 0;
+            }
 
-          if(this.account.debitBalance) {
-            r.net += split.amount;
-          } else {
-            r.net -= split.amount;
+            let r = reconcileMap[endDate.getTime()];
+
+            r.txs.push(tx);
+
+            if (this.account.debitBalance) {
+              r.net += split.amount;
+            } else {
+              r.net -= split.amount;
+            }
+          });
+
+          if (!reconciled) {
+            this.unreconciledTxs.push(tx);
           }
         });
 
-        if(!reconciled) {
-          this.unreconciledTxs.push(tx);
+        // Figure out starting date, beginning balance and ending balance
+        let dates = Object.keys(reconcileMap)
+          .sort((a, b) => {
+            return parseInt(a) - parseInt(b);
+          })
+          .map((time) => {
+            return new Date(parseInt(time));
+          });
+
+        if (!dates.length) {
+          if (firstStartDate) {
+            this.newReconcile.patchValue({
+              startDate: DateUtil.getLocalDateString(
+                firstStartDate,
+                this.org.timezone,
+              ),
+            });
+          }
+          return;
         }
+
+        let firstRec = reconcileMap[dates[0].getTime()];
+        firstRec.startDate = firstStartDate;
+        firstRec.startBalance = 0;
+        firstRec.endBalance = firstRec.net;
+
+        this.pastReconciliations.unshift(firstRec);
+
+        let lastRec = firstRec;
+
+        for (let i = 1; i < dates.length; i++) {
+          let rec = reconcileMap[dates[i].getTime()];
+          rec.startDate = new Date(lastRec.endDate);
+          rec.startBalance = lastRec.endBalance;
+          rec.endBalance = rec.startBalance + rec.net;
+          this.pastReconciliations.unshift(rec);
+          lastRec = rec;
+        }
+
+        this.newReconcile.patchValue({
+          startDate: DateUtil.getLocalDateString(
+            lastRec.endDate,
+            this.org.timezone,
+          ),
+          startBalance:
+            lastRec.endBalance / Math.pow(10, this.account.precision),
+        });
       });
-
-      // Figure out starting date, beginning balance and ending balance
-      let dates = Object.keys(reconcileMap).sort((a, b) => {
-        return parseInt(a) - parseInt(b);
-      }).map(time => {
-        return new Date(parseInt(time));
-      });
-
-      if(!dates.length) {
-        if(firstStartDate) {
-          this.newReconcile.patchValue({startDate: DateUtil.getLocalDateString(firstStartDate, this.org.timezone)});
-        }
-        return;
-      }
-
-      let firstRec = reconcileMap[dates[0].getTime()];
-      firstRec.startDate = firstStartDate;
-      firstRec.startBalance = 0;
-      firstRec.endBalance = firstRec.net;
-
-      this.pastReconciliations.unshift(firstRec);
-
-      let lastRec = firstRec;
-
-      for(let i = 1; i < dates.length; i++) {
-        let rec = reconcileMap[dates[i].getTime()];
-        rec.startDate = new Date(lastRec.endDate);
-        rec.startBalance = lastRec.endBalance;
-        rec.endBalance = rec.startBalance + rec.net;
-        this.pastReconciliations.unshift(rec);
-        lastRec = rec;
-      }
-
-      this.newReconcile.patchValue(
-        {
-          startDate: DateUtil.getLocalDateString(lastRec.endDate, this.org.timezone),
-          startBalance: lastRec.endBalance / Math.pow(10, this.account.precision)
-        }
-      );
-    });
   }
 
   delete() {
-    this.modalService.open(this.confirmDeleteModal).result.then((result) => {
-      this.sessionService.setLoading(true);
+    this.modalService.open(this.confirmDeleteModal).result.then(
+      (result) => {
+        this.sessionService.setLoading(true);
 
-      let rec = this.pastReconciliations[0];
-  
-      Observable.from(rec.txs).mergeMap(tx => {
-        let oldId = tx.id;
-        tx.id = Util.newGuid();
+        let rec = this.pastReconciliations[0];
 
-        let data = tx.getData();
+        from(rec.txs)
+          .pipe(
+            mergeMap((tx) => {
+              let oldId = tx.id;
+              tx.id = Util.newGuid();
 
-        let newSplits = {};
+              let data = tx.getData();
 
-        for(let splitId in data.reconciledSplits) {
-          if(tx.splits[splitId].accountId !== this.account.id) {
-            newSplits[splitId] = tx.splits[splitId];
-          }
-        }
+              let newSplits = {};
 
-        data.reconciledSplits = newSplits;
+              for (let splitId in data.reconciledSplits) {
+                if (tx.splits[splitId].accountId !== this.account.id) {
+                  newSplits[splitId] = tx.splits[splitId];
+                }
+              }
 
-        tx.setData(data);
-  
-        return this.txService.putTransaction(oldId, tx);
-      }, 8).subscribe(tx => {
-        this.log.debug('Saved tx ' + tx.id);
-      }, err => {
-        this.error = err;
-        this.sessionService.setLoading(false);
-      }, () => {
-        this.pastReconciliations.shift();
-        let lastRec = this.pastReconciliations[0];
+              data.reconciledSplits = newSplits;
 
-        if(lastRec) {
-          this.newReconcile.patchValue(
-            {
-              startDate: DateUtil.getLocalDateString(lastRec.endDate, this.org.timezone),
-              startBalance: lastRec.endBalance / Math.pow(10, this.account.precision)
-            }
-          );
-        } else {
-          this.newReconcile.patchValue(
-            {
-              startDate: null,
-              startBalance: 0
-            }
-          );
-        }
+              tx.setData(data);
 
-        this.sessionService.setLoading(false);
-      });
-    }, (reason) => {
-      this.log.debug('cancel delete');
-    });
+              return this.txService.putTransaction(oldId, tx);
+            }, 8),
+          )
+          .subscribe({
+            next: (tx) => {
+              this.log.debug('Saved tx ' + tx.id);
+            },
+            error: (err) => {
+              this.error = err;
+              this.sessionService.setLoading(false);
+            },
+            complete: () => {
+              this.pastReconciliations.shift();
+              let lastRec = this.pastReconciliations[0];
+
+              if (lastRec) {
+                this.newReconcile.patchValue({
+                  startDate: DateUtil.getLocalDateString(
+                    lastRec.endDate,
+                    this.org.timezone,
+                  ),
+                  startBalance:
+                    lastRec.endBalance / Math.pow(10, this.account.precision),
+                });
+              } else {
+                this.newReconcile.patchValue({
+                  startDate: null,
+                  startBalance: 0,
+                });
+              }
+
+              this.sessionService.setLoading(false);
+            },
+          });
+      },
+      (reason) => {
+        this.log.debug('cancel delete');
+      },
+    );
   }
-
 }

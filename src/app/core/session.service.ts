@@ -3,18 +3,14 @@ import { Logger } from './logger';
 import { User } from '../shared/user';
 import { Org } from '../shared/org';
 import { SessionOptions } from '../shared/session-options';
-import { Observable } from 'rxjs/Observable';
-import { Subject } from 'rxjs/Subject';
+import { Observable, of, Subject } from 'rxjs';
 import { ConfigService } from './config.service';
 import { ApiService } from './api.service';
 import { WebSocketService } from './websocket.service';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/switchMap';
-import 'rxjs/add/operator/map';
+import { catchError, map, switchMap, tap } from 'rxjs/operators';
 
 @Injectable()
 export class SessionService {
-
   private sessions$: Subject<[User, Org, SessionOptions]>;
   private user: User;
   private org: Org;
@@ -24,7 +20,8 @@ export class SessionService {
     private log: Logger,
     private apiService: ApiService,
     private configService: ConfigService,
-    private wsService: WebSocketService) {
+    private wsService: WebSocketService,
+  ) {
     this.loading = true;
 
     this.sessions$ = new Subject<[User, Org, SessionOptions]>();
@@ -35,16 +32,18 @@ export class SessionService {
   }
 
   login(email: string, password: string, sessionId: string): Observable<any> {
-    return this.apiService.newSession(email, password, sessionId).do(() => {
-      this.init(sessionId);
-    });
+    return this.apiService.newSession(email, password, sessionId).pipe(
+      tap(() => {
+        this.init(sessionId);
+      }),
+    );
   }
 
   init(sessionId?: string) {
     this.loading = true;
     let server = this.configService.get('server');
 
-    if(!server || server === 'https://openaccounting.io:8080/api') {
+    if (!server || server === 'https://openaccounting.io:8080/api') {
       server = 'https://api.openaccounting.io';
       this.configService.put('server', server);
     }
@@ -55,72 +54,79 @@ export class SessionService {
 
     let orgId = this.configService.get('defaultOrg');
 
-    if(!sessionId) {
+    if (!sessionId) {
       this.loading = false;
       return this.sessions$.next([null, null, new SessionOptions()]);
     }
 
     this.apiService.setSession(sessionId);
 
-    this.apiService.getUser()
-      .catch(err => {
-        this.log.debug('bad session ' + err);
-        this.apiService.removeSessionInfo();
-        this.configService.clear();
-        this.loading = false;
-        return Observable.of(null);
-      })
-      .switchMap(user => {
-        if(!user) {
+    this.apiService
+      .getUser()
+      .pipe(
+        catchError((err) => {
+          this.log.debug('bad session ' + err);
+          this.apiService.removeSessionInfo();
+          this.configService.clear();
           this.loading = false;
-          return Observable.of([null, null, new SessionOptions]);
-        }
+          return of(null);
+        }),
+        switchMap((user: User) => {
+          if (!user) {
+            this.loading = false;
+            return of([null, null, new SessionOptions()]);
+          }
 
-        return this.apiService.getOrg(orgId).map(org => {
-          return [user, org];
-        }).catch(err => {
-          this.loading = false;
-          this.log.debug('catching error here');
-          return this.apiService.getOrgs().map(orgs => {
-            if(orgs.length) {
-              let org = orgs[0];
-              this.configService.put('defaultOrg', org.id);
+          return this.apiService.getOrg(orgId).pipe(
+            map((org: Org) => {
               return [user, org];
-            }
+            }),
+            catchError((err) => {
+              this.loading = false;
+              this.log.debug('catching error here');
+              return this.apiService.getOrgs().pipe(
+                map((orgs: Org[]) => {
+                  if (orgs.length) {
+                    let org = orgs[0];
+                    this.configService.put('defaultOrg', org.id);
+                    return [user, org];
+                  }
 
-            return [user, null];
-          })
-        })
-      })
-      .subscribe(([user, org]) => {
+                  return [user, null];
+                }),
+              );
+            }),
+          );
+        }),
+      )
+      .subscribe(([user, org]: [User, Org]) => {
         this.log.debug('new session');
         this.log.debug(user);
         this.log.debug(org);
         this.user = user;
         this.org = org;
 
-        if(org) {
+        if (org) {
           this.apiService.setOrgId(org.id);
         }
 
         // initialize websocket
         let matches = server.match(/\/\/([^\/]+)/);
 
-        if(matches[1]) {
-          let url = 'wss://' + 
-            matches[1] + 
-            '/ws';
+        if (matches[1]) {
+          let url = 'wss://' + matches[1] + '/ws';
 
           this.wsService.init(url, sessionId);
-
         } else {
-          this.log.debug('Failed to initialize web socket because we can\'t parse server url');
+          this.log.debug(
+            "Failed to initialize web socket because we can't parse server url",
+          );
         }
 
         this.loading = false;
 
         this.sessions$.next([user, org, new SessionOptions()]);
-      })
+      });
   }
 
   logout() {
@@ -136,7 +142,7 @@ export class SessionService {
 
   switchOrg(org: Org, options?: SessionOptions) {
     setTimeout(() => {
-      if(!options) {
+      if (!options) {
         options = new SessionOptions();
       }
 

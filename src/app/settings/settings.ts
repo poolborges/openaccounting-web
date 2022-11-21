@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { 
+import {
   FormGroup,
   Validators,
   FormBuilder,
-  AbstractControl
+  AbstractControl,
 } from '@angular/forms';
 import { ConfigService } from '../core/config.service';
 import { ApiKeyService } from '../core/apikey.service';
@@ -21,9 +21,9 @@ class KeyItem {
 
 @Component({
   selector: 'app-settings',
-  templateUrl: 'settings.html'
+  templateUrl: 'settings.html',
 })
-export class SettingsPage {
+export class SettingsPageComponent {
   public form: FormGroup;
   public error: AppError;
   private changePasswordForm: FormGroup;
@@ -36,38 +36,40 @@ export class SettingsPage {
     private apiKeyService: ApiKeyService,
     public sessionService: SessionService,
     private userService: UserService,
-    private fb: FormBuilder
-   ) {
-  }
+    private fb: FormBuilder,
+  ) {}
 
   ngOnInit() {
     let server = this.configService.get('server');
 
     this.form = this.fb.group({
-      'server': [server, Validators.required],
+      server: [server, Validators.required],
     });
 
-    if(!this.sessionService.getUser()) {
+    if (!this.sessionService.getUser()) {
       return;
     }
 
-    this.changePasswordForm = this.fb.group({
-      'password': [null, Validators.required],
-      'password2': [null, Validators.required]
-    }, {
-      validator: this.passwordMatchValidator
-    });
+    this.changePasswordForm = this.fb.group(
+      {
+        password: [null, Validators.required],
+        password2: [null, Validators.required],
+      },
+      {
+        validator: this.passwordMatchValidator,
+      },
+    );
 
     this.keyItems = [];
 
-    this.apiKeyService.getApiKeys().subscribe(keys => {
-      keys.forEach(key => {
+    this.apiKeyService.getApiKeys().subscribe((keys) => {
+      keys.forEach((key) => {
         this.keyItems.push({
           exists: true,
           form: this.fb.group({
-            'id': [key.id, Validators.required],
-            'label': [key.label, Validators.required]
-          })
+            id: [key.id, Validators.required],
+            label: [key.label, Validators.required],
+          }),
         });
       });
     });
@@ -79,67 +81,81 @@ export class SettingsPage {
 
   changePassword() {
     let user = new User({
-      password: this.changePasswordForm.value.password
+      password: this.changePasswordForm.value.password,
     });
 
-    this.userService.putUser(user).subscribe(() => {
-      this.changePasswordError = new AppError('Successfully changed password');
-    }, err => {
-      this.changePasswordError = err;
+    this.userService.putUser(user).subscribe({
+      next: () => {
+        this.changePasswordError = new AppError(
+          'Successfully changed password',
+        );
+      },
+      error: (err) => {
+        this.changePasswordError = err;
+      },
     });
   }
 
   passwordMatchValidator(control: AbstractControl) {
-    if(control.get('password').value === control.get('password2').value) {
+    if (control.get('password').value === control.get('password2').value) {
       return null;
     } else {
-      control.get('password2').setErrors({mismatchedPassword: true});
+      control.get('password2').setErrors({ mismatchedPassword: true });
     }
   }
 
   newKey() {
     let key = new ApiKey({
       id: Util.newGuid(),
-      label: ''
+      label: '',
     });
 
     this.keyItems.push({
       exists: false,
       form: this.fb.group({
-        'id': [key.id, Validators.required],
-        'label': [key.label, Validators.required]
-      })
+        id: [key.id, Validators.required],
+        label: [key.label, Validators.required],
+      }),
     });
   }
 
   postKey(item: KeyItem) {
     let key = new ApiKey(item.form.value);
-    this.apiKeyService.newApiKey(key).subscribe(() => {
-      item.exists = true;
-      item.form.markAsPristine();
-    }, err => {
-      this.keyError = err;
-    })
+    this.apiKeyService.newApiKey(key).subscribe({
+      next: () => {
+        item.exists = true;
+        item.form.markAsPristine();
+      },
+      error: (err) => {
+        this.keyError = err;
+      },
+    });
   }
 
   updateKey(item: KeyItem) {
     let key = new ApiKey(item.form.value);
-    this.apiKeyService.putApiKey(key).subscribe(newKey => {
-      item.form.markAsPristine();
-    }, err => {
-      this.keyError = err;
-    })
+    this.apiKeyService.putApiKey(key).subscribe({
+      next: (newKey) => {
+        item.form.markAsPristine();
+      },
+      error: (err) => {
+        this.keyError = err;
+      },
+    });
   }
 
   deleteKey(item: KeyItem) {
     let key = new ApiKey(item.form.value);
-    this.apiKeyService.deleteApiKey(key.id).subscribe(() => {
-      // remove item from list
-      this.keyItems = this.keyItems.filter(item => {
-        return item.form.value['id'] !== key.id;
-      });
-    }, err => {
-      this.keyError = err;
-    })
+    this.apiKeyService.deleteApiKey(key.id).subscribe({
+      next: () => {
+        // remove item from list
+        this.keyItems = this.keyItems.filter((item) => {
+          return item.form.value['id'] !== key.id;
+        });
+      },
+      error: (err) => {
+        this.keyError = err;
+      },
+    });
   }
 }

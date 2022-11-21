@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
 import { Logger } from '../core/logger';
-import { 
+import {
   FormGroup,
   Validators,
   FormBuilder,
-  AbstractControl
+  AbstractControl,
 } from '@angular/forms';
 import { UserService } from '../core/user.service';
 import { ConfigService } from '../core/config.service';
@@ -14,9 +14,9 @@ import { Util } from '../shared/util';
 
 @Component({
   selector: 'app-register',
-  templateUrl: 'register.html'
+  templateUrl: 'register.html',
 })
-export class RegisterPage {
+export class RegisterPageComponent {
   public registered: boolean = false;
   private form: FormGroup;
   private email: string;
@@ -26,18 +26,21 @@ export class RegisterPage {
     private log: Logger,
     private userService: UserService,
     private configService: ConfigService,
-    private fb: FormBuilder
-   ) {
-    this.form = fb.group({
-      'firstName': ['', Validators.required],
-      'lastName': ['', Validators.required],
-      'email': ['', Validators.required],
-      'password': ['', Validators.required],
-      'password2': ['', Validators.required],
-      'agreeToTerms': [false, Validators.required]
-    }, {
-      validator: this.passwordMatchValidator
-    });
+    private fb: FormBuilder,
+  ) {
+    this.form = fb.group(
+      {
+        firstName: ['', Validators.required],
+        lastName: ['', Validators.required],
+        email: ['', Validators.required],
+        password: ['', Validators.required],
+        password2: ['', Validators.required],
+        agreeToTerms: [false, Validators.required],
+      },
+      {
+        validator: this.passwordMatchValidator,
+      },
+    );
   }
 
   onSubmit() {
@@ -46,26 +49,25 @@ export class RegisterPage {
     formUser.signupSource = 'web';
     this.log.debug(formUser);
 
-    this.userService.postUser(formUser)
-      .subscribe(
-        user => {
-          this.log.debug(user);
-          this.registered = true;
-          this.email = user.email;
-        },
-        error => {
-          this.log.debug('An error occurred!');
-          this.log.debug(error);
-          this.error = error;
-        }
-    );
+    this.userService.postUser(formUser).subscribe({
+      next: (user) => {
+        this.log.debug(user);
+        this.registered = true;
+        this.email = user.email;
+      },
+      error: (error) => {
+        this.log.debug('An error occurred!');
+        this.log.debug(error);
+        this.error = error;
+      },
+    });
   }
 
   passwordMatchValidator(control: AbstractControl) {
-    if(control.get('password').value === control.get('password2').value) {
+    if (control.get('password').value === control.get('password2').value) {
       return null;
     } else {
-      control.get('password2').setErrors({mismatchedPassword: true});
+      control.get('password2').setErrors({ mismatchedPassword: true });
     }
   }
 }

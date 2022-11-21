@@ -2,11 +2,11 @@ import { Component, Input } from '@angular/core';
 import { Account } from '../shared/account';
 
 @Component({
-  selector: 'breadcrumbs',
+  selector: 'app-breadcrumbs',
   templateUrl: 'breadcrumbs.html',
-  styleUrls: ['./breadcrumbs.scss']
+  styleUrls: ['./breadcrumbs.scss'],
 })
-export class Breadcrumbs {
+export class BreadcrumbsComponent {
   @Input() account: Account;
   public accountCrumbs: Account[];
 
@@ -16,10 +16,9 @@ export class Breadcrumbs {
 
   ngOnInit() {
     let currentAccount = this.account;
-    while(currentAccount && currentAccount.depth > 0) {
+    while (currentAccount && currentAccount.depth > 0) {
       this.accountCrumbs.unshift(currentAccount);
       currentAccount = currentAccount.parent;
     }
   }
-
 }

@@ -16,14 +16,11 @@ import { SettingsModule } from './settings/settings.module';
 import { ReconcileModule } from './reconcile/reconcile.module';
 import { PriceModule } from './price/price.module';
 
-
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
+  declarations: [AppComponent],
   imports: [
     BrowserModule,
-    NgbModule.forRoot(),
+    NgbModule,
     AppRoutingModule,
     CoreModule.forRoot(),
     DashboardModule,
@@ -35,9 +32,9 @@ import { PriceModule } from './price/price.module';
     ReportsModule,
     SettingsModule,
     ReconcileModule,
-    PriceModule
+    PriceModule,
   ],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}

@@ -5,186 +5,381 @@
     <ngb-accordion #acc="ngbAccordion" activeIds="toggle-1">
       <ngb-panel id="toggle-1" [title]="getToggle1Title()">
         <ng-template ngbPanelContent>
-            <div class="btn-group-toggle" ngbRadioGroup name="radioBasic" formControlName="type">
-                <label ngbButtonLabel class="btn-primary mr-2">
-                  <input ngbButton type="radio" value="expense"> Expense
-                </label>
-                <label ngbButtonLabel class="btn-primary mr-2">
-                  <input ngbButton type="radio" value="income"> Income
-                </label>
-                <label ngbButtonLabel class="btn-primary mr-2" *ngIf="openingBalances">
-                  <input ngbButton type="radio" value="openingBalance"> Opening Balance
-                </label>
-                <label ngbButtonLabel class="btn-primary mr-2">
-                    <input ngbButton type="radio" value="other"> Other
-                  </label>
-              </div>
-          <div id="firstAccountPrimary" *ngIf="form.value?.type === 'expense'" class="mt-3">
-            <div class="btn-group-toggle" ngbRadioGroup name="radioBasic2" formControlName="firstAccountPrimary">
-              <label *ngFor="let account of expenseAccounts" ngbButtonLabel class="btn-primary mr-2">
-                <input ngbButton type="radio" [value]="account.id">{{account.label | slice:0:30}}
+          <div
+            class="btn-group-toggle"
+            ngbRadioGroup
+            name="radioBasic"
+            formControlName="type"
+          >
+            <label ngbButtonLabel class="btn-primary mr-2">
+              <input ngbButton type="radio" value="expense" /> Expense
+            </label>
+            <label ngbButtonLabel class="btn-primary mr-2">
+              <input ngbButton type="radio" value="income" /> Income
+            </label>
+            <label
+              ngbButtonLabel
+              class="btn-primary mr-2"
+              *ngIf="openingBalances"
+            >
+              <input ngbButton type="radio" value="openingBalance" /> Opening
+              Balance
+            </label>
+            <label ngbButtonLabel class="btn-primary mr-2">
+              <input ngbButton type="radio" value="other" /> Other
+            </label>
+          </div>
+          <div
+            id="firstAccountPrimary"
+            *ngIf="form.value?.type === 'expense'"
+            class="mt-3"
+          >
+            <div
+              class="btn-group-toggle"
+              ngbRadioGroup
+              name="radioBasic2"
+              formControlName="firstAccountPrimary"
+            >
+              <label
+                *ngFor="let account of expenseAccounts"
+                ngbButtonLabel
+                class="btn-primary mr-2"
+              >
+                <input ngbButton type="radio" [value]="account.id" />{{
+                  account.label | slice: 0:30
+                }}
               </label>
               <label ngbButtonLabel class="btn-primary mr-2">
-                  <input ngbButton type="radio" value="other">Other
+                <input ngbButton type="radio" value="other" />Other
               </label>
             </div>
-            <div id="firstAccountSelect" *ngIf="form.value?.firstAccountPrimary === 'other'" class="mt-3">
-                <div class="form-group">
-                    <label for="firstAccountSecondary" class="col-sm-3 col-form-label">Choose Account</label>
-                    <select class="form-control" id="account" formControlName="firstAccountSecondary">
-                      <option *ngFor="let account of expenseAccountsAll" [value]="account.id">
-                        {{account.label | slice:0:30}}
-                      </option>
-                    </select>
-                  </div>
+            <div
+              id="firstAccountSelect"
+              *ngIf="form.value?.firstAccountPrimary === 'other'"
+              class="mt-3"
+            >
+              <div class="form-group">
+                <label
+                  for="firstAccountSecondary"
+                  class="col-sm-3 col-form-label"
+                  >Choose Account</label
+                >
+                <select
+                  class="form-control"
+                  id="account"
+                  formControlName="firstAccountSecondary"
+                >
+                  <option
+                    *ngFor="let account of expenseAccountsAll"
+                    [value]="account.id"
+                  >
+                    {{ account.label | slice: 0:30 }}
+                  </option>
+                </select>
+              </div>
             </div>
           </div>
-          <div id="firstAccountPrimary" *ngIf="form.value?.type === 'income'" class="mt-3">
-              <div class="btn-group-toggle" ngbRadioGroup name="firstAccountPrimary" formControlName="firstAccountPrimary">
-                <label *ngFor="let account of incomeAccounts" ngbButtonLabel class="btn-primary mr-2">
-                  <input ngbButton type="radio" [value]="account.id">{{account.label | slice:0:30}}
-                </label>
-                <label ngbButtonLabel class="btn-primary mr-2">
-                    <input ngbButton type="radio" value="other">Other
-                </label>
-              </div>
-              <div id="firstAccountSelect" *ngIf="form.value?.firstAccountPrimary === 'other'" class="mt-3">
-                  <div class="form-group">
-                      <label for="firstAccountSecondary" class="col-sm-3 col-form-label">Choose Account</label>
-                      <select class="form-control" id="account" formControlName="firstAccountSecondary">
-                        <option *ngFor="let account of incomeAccountsAll" [value]="account.id">
-                          {{account.label | slice:0:30}}
-                        </option>
-                      </select>
-                    </div>
+          <div
+            id="firstAccountPrimary"
+            *ngIf="form.value?.type === 'income'"
+            class="mt-3"
+          >
+            <div
+              class="btn-group-toggle"
+              ngbRadioGroup
+              name="firstAccountPrimary"
+              formControlName="firstAccountPrimary"
+            >
+              <label
+                *ngFor="let account of incomeAccounts"
+                ngbButtonLabel
+                class="btn-primary mr-2"
+              >
+                <input ngbButton type="radio" [value]="account.id" />{{
+                  account.label | slice: 0:30
+                }}
+              </label>
+              <label ngbButtonLabel class="btn-primary mr-2">
+                <input ngbButton type="radio" value="other" />Other
+              </label>
+            </div>
+            <div
+              id="firstAccountSelect"
+              *ngIf="form.value?.firstAccountPrimary === 'other'"
+              class="mt-3"
+            >
+              <div class="form-group">
+                <label
+                  for="firstAccountSecondary"
+                  class="col-sm-3 col-form-label"
+                  >Choose Account</label
+                >
+                <select
+                  class="form-control"
+                  id="account"
+                  formControlName="firstAccountSecondary"
+                >
+                  <option
+                    *ngFor="let account of incomeAccountsAll"
+                    [value]="account.id"
+                  >
+                    {{ account.label | slice: 0:30 }}
+                  </option>
+                </select>
               </div>
             </div>
-            <div id="firstAccountPrimary" *ngIf="form.value?.type === 'openingBalance'" class="mt-3">
-                <div id="firstAccountSelect" class="mt-3">
-                    <div class="form-group">
-                        <label for="firstAccountSecondary" class="col-sm-3 col-form-label">Choose Account</label>
-                        <select class="form-control" id="account" formControlName="firstAccountSecondary">
-                          <option *ngFor="let account of paymentAccountsAll" [value]="account.id">
-                            {{account.label | slice:0:30}}
-                          </option>
-                        </select>
-                      </div>
-                </div>
+          </div>
+          <div
+            id="firstAccountPrimary"
+            *ngIf="form.value?.type === 'openingBalance'"
+            class="mt-3"
+          >
+            <div id="firstAccountSelect" class="mt-3">
+              <div class="form-group">
+                <label
+                  for="firstAccountSecondary"
+                  class="col-sm-3 col-form-label"
+                  >Choose Account</label
+                >
+                <select
+                  class="form-control"
+                  id="account"
+                  formControlName="firstAccountSecondary"
+                >
+                  <option
+                    *ngFor="let account of paymentAccountsAll"
+                    [value]="account.id"
+                  >
+                    {{ account.label | slice: 0:30 }}
+                  </option>
+                </select>
               </div>
+            </div>
+          </div>
         </ng-template>
       </ngb-panel>
-      <ngb-panel id="toggle-2" [title]="getToggle2Title()" *ngIf="form.value?.type !== 'openingBalance'">
+      <ngb-panel
+        id="toggle-2"
+        [title]="getToggle2Title()"
+        *ngIf="form.value?.type !== 'openingBalance'"
+      >
         <ng-template ngbPanelContent>
-            <div id="secondAccountPrimary" *ngIf="form.value?.type === 'expense'" class="mt-3">
-                <div class="btn-group-toggle" ngbRadioGroup name="secondAccountPrimary" formControlName="secondAccountPrimary">
-                  <label *ngFor="let account of paymentAccounts" ngbButtonLabel class="btn-primary mr-2">
-                    <input ngbButton type="radio" [value]="account.id">{{account.label | slice:0:30}}
-                  </label>
-                  <label ngbButtonLabel class="btn-primary mr-2">
-                      <input ngbButton type="radio" value="other">Other
-                  </label>
-                </div>
-                <div id="secondAccountSelect" *ngIf="form.value?.secondAccountPrimary === 'other'" class="mt-3">
-                    <div class="form-group">
-                        <label for="secondAccountSecondary" class="col-sm-3 col-form-label">Choose Account</label>
-                        <select class="form-control" id="account" formControlName="secondAccountSecondary">
-                          <option *ngFor="let account of paymentAccountsAll" [value]="account.id">
-                            {{account.label | slice:0:30}}
-                          </option>
-                        </select>
-                      </div>
-                </div>
+          <div
+            id="secondAccountPrimary"
+            *ngIf="form.value?.type === 'expense'"
+            class="mt-3"
+          >
+            <div
+              class="btn-group-toggle"
+              ngbRadioGroup
+              name="secondAccountPrimary"
+              formControlName="secondAccountPrimary"
+            >
+              <label
+                *ngFor="let account of paymentAccounts"
+                ngbButtonLabel
+                class="btn-primary mr-2"
+              >
+                <input ngbButton type="radio" [value]="account.id" />{{
+                  account.label | slice: 0:30
+                }}
+              </label>
+              <label ngbButtonLabel class="btn-primary mr-2">
+                <input ngbButton type="radio" value="other" />Other
+              </label>
             </div>
-            <div id="secondAccountPrimary" *ngIf="form.value?.type === 'income'" class="mt-3">
-                <div class="btn-group-toggle" ngbRadioGroup name="secondAccountPrimary" formControlName="secondAccountPrimary">
-                  <label *ngFor="let account of assetAccounts" ngbButtonLabel class="btn-primary mr-2">
-                    <input ngbButton type="radio" [value]="account.id">{{account.label | slice:0:30}}
-                  </label>
-                  <label ngbButtonLabel class="btn-primary mr-2">
-                      <input ngbButton type="radio" value="other">Other
-                  </label>
-                </div>
-                <div id="secondAccountSelect" *ngIf="form.value?.secondAccountPrimary === 'other'" class="mt-3">
-                    <div class="form-group">
-                        <label for="secondAccountSecondary" class="col-sm-3 col-form-label">Choose Account</label>
-                        <select class="form-control" id="account" formControlName="secondAccountSecondary">
-                          <option *ngFor="let account of assetAccountsAll" [value]="account.id">
-                            {{account.label | slice:0:30}}
-                          </option>
-                        </select>
-                      </div>
-                </div>
+            <div
+              id="secondAccountSelect"
+              *ngIf="form.value?.secondAccountPrimary === 'other'"
+              class="mt-3"
+            >
+              <div class="form-group">
+                <label
+                  for="secondAccountSecondary"
+                  class="col-sm-3 col-form-label"
+                  >Choose Account</label
+                >
+                <select
+                  class="form-control"
+                  id="account"
+                  formControlName="secondAccountSecondary"
+                >
+                  <option
+                    *ngFor="let account of paymentAccountsAll"
+                    [value]="account.id"
+                  >
+                    {{ account.label | slice: 0:30 }}
+                  </option>
+                </select>
+              </div>
             </div>
+          </div>
+          <div
+            id="secondAccountPrimary"
+            *ngIf="form.value?.type === 'income'"
+            class="mt-3"
+          >
+            <div
+              class="btn-group-toggle"
+              ngbRadioGroup
+              name="secondAccountPrimary"
+              formControlName="secondAccountPrimary"
+            >
+              <label
+                *ngFor="let account of assetAccounts"
+                ngbButtonLabel
+                class="btn-primary mr-2"
+              >
+                <input ngbButton type="radio" [value]="account.id" />{{
+                  account.label | slice: 0:30
+                }}
+              </label>
+              <label ngbButtonLabel class="btn-primary mr-2">
+                <input ngbButton type="radio" value="other" />Other
+              </label>
+            </div>
+            <div
+              id="secondAccountSelect"
+              *ngIf="form.value?.secondAccountPrimary === 'other'"
+              class="mt-3"
+            >
+              <div class="form-group">
+                <label
+                  for="secondAccountSecondary"
+                  class="col-sm-3 col-form-label"
+                  >Choose Account</label
+                >
+                <select
+                  class="form-control"
+                  id="account"
+                  formControlName="secondAccountSecondary"
+                >
+                  <option
+                    *ngFor="let account of assetAccountsAll"
+                    [value]="account.id"
+                  >
+                    {{ account.label | slice: 0:30 }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
         </ng-template>
       </ngb-panel>
       <ngb-panel id="toggle-3" title="Amount">
         <ng-template ngbPanelContent>
           <div class="form-group">
-            <input #amount type="number" class="form-control" id="amount" formControlName="amount">
+            <input
+              #amount
+              type="number"
+              class="form-control"
+              id="amount"
+              formControlName="amount"
+            />
           </div>
         </ng-template>
       </ngb-panel>
       <ngb-panel id="toggle-4" title="Description">
         <ng-template ngbPanelContent>
           <div class="form-group">
-            <input type="text" class="form-control" id="description" formControlName="description">
+            <input
+              type="text"
+              class="form-control"
+              id="description"
+              formControlName="description"
+            />
           </div>
         </ng-template>
       </ngb-panel>
       <ngb-panel id="toggle-5" title="Date">
         <ng-template ngbPanelContent>
           <div class="form-group">
-            <input type="date" class="form-control" id="date" formControlName="date">
+            <input
+              type="date"
+              class="form-control"
+              id="date"
+              formControlName="date"
+            />
           </div>
         </ng-template>
       </ngb-panel>
       <ngb-panel id="toggle-6" title="Advanced">
         <ng-template ngbPanelContent>
-            <div class="container-fluid" formArrayName="splits">
-                <div class="row">
-                  <div class="col-8">
-                    <h3>Account</h3>
-                  </div>
-                  <div class="col-2">
-                    <h3>Debit</h3>
-                  </div>
-                  <div class="col-2">
-                    <h3>Credit</h3>
-                  </div>
-                </div>
-                <div class="row" *ngFor="let split of form.get('splits').controls; let i=index" [formGroup]="split">
-                  <div class="col-8">
-                      <div class="form-group">
-                          <select class="form-control" id="account" formControlName="accountId">
-                            <option *ngFor="let account of selectAccounts" [value]="account.id">
-                              {{account.fullName | slice:0:50}}
-                            </option>
-                          </select>
-                      </div>
-                    </div>
-                  <div class="col-2">
-                    <div class="form-group">
-                      <input type="number" class="form-control" formControlName="debit" [ngClass]="{'positive': accountMap[split.value.accountId]?.debitBalance, 'negative': !accountMap[split.value.accountId]?.debitBalance}"/>
-                    </div>
-                  </div>
-                  <div class="col-2">
-                      <div class="form-group">
-                          <input type="number" class="form-control" formControlName="credit" [ngClass]="{'positive': !accountMap[split.value.accountId]?.debitBalance, 'negative': accountMap[split.value.accountId]?.debitBalance}"/>
-                      </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-8">
-                    <p>
-                      <a (click)="addSplit()">Add Split</a>
-                    </p>
-                  </div>
+          <div class="container-fluid" formArrayName="splits">
+            <div class="row">
+              <div class="col-8">
+                <h3>Account</h3>
+              </div>
+              <div class="col-2">
+                <h3>Debit</h3>
+              </div>
+              <div class="col-2">
+                <h3>Credit</h3>
+              </div>
+            </div>
+            <div
+              class="row"
+              *ngFor="let split of form.get('splits').controls; let i = index"
+              [formGroup]="split"
+            >
+              <div class="col-8">
+                <div class="form-group">
+                  <select
+                    class="form-control"
+                    id="account"
+                    formControlName="accountId"
+                  >
+                    <option
+                      *ngFor="let account of selectAccounts"
+                      [value]="account.id"
+                    >
+                      {{ account.fullName | slice: 0:50 }}
+                    </option>
+                  </select>
                 </div>
               </div>
+              <div class="col-2">
+                <div class="form-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    formControlName="debit"
+                    [ngClass]="{
+                      positive: accountMap[split.value.accountId]?.debitBalance,
+                      negative: !accountMap[split.value.accountId]?.debitBalance
+                    }"
+                  />
+                </div>
+              </div>
+              <div class="col-2">
+                <div class="form-group">
+                  <input
+                    type="number"
+                    class="form-control"
+                    formControlName="credit"
+                    [ngClass]="{
+                      positive:
+                        !accountMap[split.value.accountId]?.debitBalance,
+                      negative: accountMap[split.value.accountId]?.debitBalance
+                    }"
+                  />
+                </div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-8">
+                <p>
+                  <a (click)="addSplit()">Add Split</a>
+                </p>
+              </div>
+            </div>
+          </div>
         </ng-template>
       </ngb-panel>
     </ngb-accordion>
-    <p *ngIf="error" class="error mt-3">{{error.message}}</p>
-    <button type="submit" class="btn btn-primary mt-3" [disabled]="!form.valid">Add Transaction</button>
+    <p *ngIf="error" class="error mt-3">{{ error.message }}</p>
+    <button type="submit" class="btn btn-primary mt-3" [disabled]="!form.valid">
+      Add Transaction
+    </button>
   </form>
 </div>

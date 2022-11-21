@@ -5,23 +5,19 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { SharedModule } from '../shared/shared.module';
 import { AppRoutingModule } from '../app-routing.module';
 
-import { PriceDbPage } from './pricedb';
-import { PriceModal } from './price-modal';
-
+import { PriceDbPageComponent } from './pricedb';
+import { PriceModalComponent } from './price-modal';
 
 @NgModule({
-  declarations: [
-    PriceDbPage,
-    PriceModal
-  ],
+  declarations: [PriceDbPageComponent, PriceModalComponent],
   imports: [
     BrowserModule,
     NgbModule,
     ReactiveFormsModule,
     SharedModule,
-    AppRoutingModule
+    AppRoutingModule,
   ],
   providers: [],
-  entryComponents: [PriceModal]
+  entryComponents: [PriceModalComponent],
 })
-export class PriceModule { }
+export class PriceModule {}

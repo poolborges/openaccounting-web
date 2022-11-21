@@ -7,19 +7,39 @@
     <div class="form-group row">
       <label for="name" class="col-sm-3 col-form-label">Name</label>
       <div class="col-sm-9">
-        <input formControlName="name" type="text" class="form-control" id="name" placeholder="Organization name">
+        <input
+          formControlName="name"
+          type="text"
+          class="form-control"
+          id="name"
+          placeholder="Organization name"
+        />
       </div>
     </div>
     <div class="form-group row">
       <label for="currency" class="col-sm-3 col-form-label">Currency</label>
       <div class="col-sm-9">
-        <input formControlName="currency" type="text" class="form-control" id="currency" placeholder="Currency">
+        <input
+          formControlName="currency"
+          type="text"
+          class="form-control"
+          id="currency"
+          placeholder="Currency"
+        />
       </div>
     </div>
     <div class="form-group row">
-      <label for="precision" class="col-sm-3 col-form-label">Decimal Places</label>
+      <label for="precision" class="col-sm-3 col-form-label"
+        >Decimal Places</label
+      >
       <div class="col-sm-9">
-        <input formControlName="precision" type="text" class="form-control" id="precision" placeholder="Decimal Places">
+        <input
+          formControlName="precision"
+          type="text"
+          class="form-control"
+          id="precision"
+          placeholder="Decimal Places"
+        />
       </div>
     </div>
     <div class="form-group row">
@@ -27,30 +47,44 @@
       <div class="col-sm-9">
         <select class="form-control" id="timezone" formControlName="timezone">
           <option *ngFor="let tz of timezones" [value]="tz">
-            {{tz}}
+            {{ tz }}
           </option>
         </select>
       </div>
     </div>
-    <p *ngIf="updateOrgError" class="error">{{updateOrgError.message}}</p>
-    <button class="btn btn-primary" type="submit" [disabled]="!updateOrgForm.valid">Save Changes</button>
+    <p *ngIf="updateOrgError" class="error">{{ updateOrgError.message }}</p>
+    <button
+      class="btn btn-primary"
+      type="submit"
+      [disabled]="!updateOrgForm.valid"
+    >
+      Save Changes
+    </button>
   </form>
 
   <h2>Switch Organization</h2>
 
   <form [formGroup]="chooseOrgForm" (ngSubmit)="chooseOrgSubmit()">
     <div class="form-group row">
-      <label for="id" class="col-sm-3 col-form-label">Current Organization</label>
+      <label for="id" class="col-sm-3 col-form-label"
+        >Current Organization</label
+      >
       <div class="col-sm-9">
         <select class="form-control" id="id" formControlName="id">
           <option *ngFor="let org of orgs" [value]="org.id">
-            {{org.name}}
+            {{ org.name }}
           </option>
         </select>
       </div>
     </div>
-    <p *ngIf="chooseOrgError" class="error">{{chooseOrgError.message}}</p>
-    <button class="btn btn-primary" type="submit" [disabled]="!chooseOrgForm.valid">Select</button>
+    <p *ngIf="chooseOrgError" class="error">{{ chooseOrgError.message }}</p>
+    <button
+      class="btn btn-primary"
+      type="submit"
+      [disabled]="!chooseOrgForm.valid"
+    >
+      Select
+    </button>
   </form>
 </div>
 
@@ -61,27 +95,48 @@
     <div class="form-group row">
       <label for="inviteId" class="col-sm-3 col-form-label">Invite Code</label>
       <div class="col-sm-9">
-        <input formControlName="inviteId" type="text" class="form-control" id="inviteId">
+        <input
+          formControlName="inviteId"
+          type="text"
+          class="form-control"
+          id="inviteId"
+        />
       </div>
     </div>
-    <p *ngIf="joinOrgError" class="error">{{joinOrgError.message}}</p>
-    <button class="btn btn-primary" type="submit" [disabled]="!joinOrgForm.valid">Join</button>
+    <p *ngIf="joinOrgError" class="error">{{ joinOrgError.message }}</p>
+    <button
+      class="btn btn-primary"
+      type="submit"
+      [disabled]="!joinOrgForm.valid"
+    >
+      Join
+    </button>
   </form>
 </div>
 
-<div *ngIf="invites !== null"class="section">
-
-  <h2 >Invite to {{currentOrg.name}}</h2>
+<div *ngIf="invites !== null" class="section">
+  <h2>Invite to {{ currentOrg.name }}</h2>
 
   <form [formGroup]="inviteForm" (ngSubmit)="inviteSubmit()">
     <div class="form-group row">
       <label for="email" class="col-sm-3 col-form-label">Email</label>
       <div class="col-sm-9">
-        <input formControlName="email" type="text" class="form-control" id="email">
+        <input
+          formControlName="email"
+          type="text"
+          class="form-control"
+          id="email"
+        />
       </div>
     </div>
-    <p *ngIf="inviteFormError" class="error">{{inviteFormError.message}}</p>
-    <button class="btn btn-primary" type="submit" [disabled]="!inviteForm.valid">Invite</button>
+    <p *ngIf="inviteFormError" class="error">{{ inviteFormError.message }}</p>
+    <button
+      class="btn btn-primary"
+      type="submit"
+      [disabled]="!inviteForm.valid"
+    >
+      Invite
+    </button>
   </form>
 
   <div class="container-fluid mt-3">
@@ -95,15 +150,14 @@
       <div class="col-2">
         <strong>Status</strong>
       </div>
-      <div class="col-2">
-      </div>
+      <div class="col-2"></div>
     </div>
     <div class="row" *ngFor="let invite of invites">
       <div class="col-3">
-        {{invite.id}}
+        {{ invite.id }}
       </div>
       <div class="col-5">
-        {{invite.email}}
+        {{ invite.email }}
       </div>
       <div class="col-2">
         <span *ngIf="invite.accepted">accepted</span>
@@ -114,7 +168,6 @@
       </div>
     </div>
   </div>
-
 </div>
 
 <div class="section">
@@ -123,19 +176,39 @@
     <div class="form-group row">
       <label for="name" class="col-sm-3 col-form-label">Name</label>
       <div class="col-sm-9">
-        <input formControlName="name" type="text" class="form-control" id="name" placeholder="Organization name">
+        <input
+          formControlName="name"
+          type="text"
+          class="form-control"
+          id="name"
+          placeholder="Organization name"
+        />
       </div>
     </div>
     <div class="form-group row">
       <label for="currency" class="col-sm-3 col-form-label">Currency</label>
       <div class="col-sm-9">
-        <input formControlName="currency" type="text" class="form-control" id="currency" placeholder="Currency">
+        <input
+          formControlName="currency"
+          type="text"
+          class="form-control"
+          id="currency"
+          placeholder="Currency"
+        />
       </div>
     </div>
     <div class="form-group row">
-      <label for="precision" class="col-sm-3 col-form-label">Decimal Places</label>
+      <label for="precision" class="col-sm-3 col-form-label"
+        >Decimal Places</label
+      >
       <div class="col-sm-9">
-        <input formControlName="precision" type="text" class="form-control" id="precision" placeholder="Decimal Places">
+        <input
+          formControlName="precision"
+          type="text"
+          class="form-control"
+          id="precision"
+          placeholder="Decimal Places"
+        />
       </div>
     </div>
     <div class="form-group row">
@@ -143,7 +216,7 @@
       <div class="col-sm-9">
         <select class="form-control" id="timezone" formControlName="timezone">
           <option *ngFor="let tz of timezones" [value]="tz">
-            {{tz}}
+            {{ tz }}
           </option>
         </select>
       </div>
@@ -151,21 +224,49 @@
     <p>Create default accounts (can be customized later)</p>
     <div class="form-group">
       <div class="form-check">
-        <input formControlName="createDefaultAccounts" id="createDefaultAccounts1" type="radio" class="form-check-input" value="" />
-        <label for="createDefaultAccounts1" class="form-check-label">None</label>
+        <input
+          formControlName="createDefaultAccounts"
+          id="createDefaultAccounts1"
+          type="radio"
+          class="form-check-input"
+          value=""
+        />
+        <label for="createDefaultAccounts1" class="form-check-label"
+          >None</label
+        >
       </div>
       <div class="form-check">
-        <input formControlName="createDefaultAccounts" id="createDefaultAccounts2" type="radio" class="form-check-input" value="business" />
-        <label for="createDefaultAccounts2" class="form-check-label">Business accounts</label>
+        <input
+          formControlName="createDefaultAccounts"
+          id="createDefaultAccounts2"
+          type="radio"
+          class="form-check-input"
+          value="business"
+        />
+        <label for="createDefaultAccounts2" class="form-check-label"
+          >Business accounts</label
+        >
       </div>
       <div class="form-check">
-        <input formControlName="createDefaultAccounts" id="createDefaultAccounts3" type="radio" class="form-check-input" value="personal" />
-        <label for="createDefaultAccounts2" class="form-check-label">Personal accounts</label>
+        <input
+          formControlName="createDefaultAccounts"
+          id="createDefaultAccounts3"
+          type="radio"
+          class="form-check-input"
+          value="personal"
+        />
+        <label for="createDefaultAccounts2" class="form-check-label"
+          >Personal accounts</label
+        >
       </div>
     </div>
-    <p *ngIf="newOrgError" class="error">{{newOrgError.message}}</p>
-    <button class="btn btn-primary" type="submit" [disabled]="!newOrgForm.valid">Create New Organization</button>
+    <p *ngIf="newOrgError" class="error">{{ newOrgError.message }}</p>
+    <button
+      class="btn btn-primary"
+      type="submit"
+      [disabled]="!newOrgForm.valid"
+    >
+      Create New Organization
+    </button>
   </form>
 </div>
-
-

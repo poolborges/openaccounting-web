@@ -11,11 +11,11 @@ export class DateUtil {
     let month = m.format('MM');
     let date = m.format('DD');
 
-    if(month.length < 2) {
+    if (month.length < 2) {
       month = '0' + month;
     }
 
-    if(date.length < 2) {
+    if (date.length < 2) {
       date = '0' + date;
     }
 
@@ -29,11 +29,11 @@ export class DateUtil {
     let month = m.format('MM');
     let date = m.format('DD');
 
-    if(month.length < 2) {
+    if (month.length < 2) {
       month = '0' + month;
     }
 
-    if(date.length < 2) {
+    if (date.length < 2) {
       date = '0' + date;
     }
 
@@ -105,8 +105,12 @@ export class DateUtil {
     return m.toDate();
   }
 
-  static computeTransactionDate(formDate: Date, txDate: Date, tz: string): Date {
-    if(!formDate || !formDate.getTime()) {
+  static computeTransactionDate(
+    formDate: Date,
+    txDate: Date,
+    tz: string,
+  ): Date {
+    if (!formDate || !formDate.getTime()) {
       return txDate;
     }
 
@@ -119,15 +123,16 @@ export class DateUtil {
     formMoment.seconds(59);
     formMoment.milliseconds(999);
 
-    let sameDay = formMoment.year() === txMoment.year() &&
+    let sameDay =
+      formMoment.year() === txMoment.year() &&
       formMoment.month() === txMoment.month() &&
       formMoment.date() === txMoment.date();
 
-    if(sameDay) {
+    if (sameDay) {
       return txDate;
     }
 
-    if(formDate < txDate) {
+    if (formDate < txDate) {
       // make time end of day for past dates
       formMoment.hours(23);
       formMoment.minutes(59);
@@ -148,9 +153,11 @@ export class DateUtil {
     let m1 = moment(date1).tz(tz || defaultTz);
     let m2 = moment(date2).tz(tz || defaultTz);
 
-    return m1.year() === m2.year() &&
+    return (
+      m1.year() === m2.year() &&
       m1.month() === m2.month() &&
-      m1.date() === m2.date();
+      m1.date() === m2.date()
+    );
   }
 
   static getPeriodStart(tz: string): Date {

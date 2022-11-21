@@ -1,9 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ApiService } from './api.service';
 import { Org } from '../shared/org';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-
+import { Observable, of } from 'rxjs';
 
 @Injectable()
 export class ConfigService {
@@ -26,7 +24,7 @@ export class ConfigService {
 
   clear() {
     this.config = {
-      server: this.config.server
+      server: this.config.server,
     };
 
     this.save();
@@ -35,17 +33,16 @@ export class ConfigService {
   save(): Observable<any> {
     localStorage.setItem('config', JSON.stringify(this.config));
 
-    return Observable.of(this.config);
+    return of(this.config);
   }
 
   load(): Observable<any> {
     try {
       this.config = JSON.parse(localStorage.getItem('config')) || {};
-    } catch(e) {
+    } catch (e) {
       this.config = {};
     }
-    
-    return Observable.of(null);
-  }
 
+    return of(null);
+  }
 }

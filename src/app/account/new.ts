@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
-import { 
+import {
   FormGroup,
   FormControl,
   Validators,
   FormBuilder,
   AbstractControl,
-  ValidationErrors
+  ValidationErrors,
 } from '@angular/forms';
 import { AccountService } from '../core/account.service';
 import { OrgService } from '../core/org.service';
@@ -16,10 +16,9 @@ import { AppError } from '../shared/error';
 
 @Component({
   selector: 'app-accounts-new',
-  templateUrl: 'new.html'
+  templateUrl: 'new.html',
 })
-export class NewAccountPage {
-
+export class NewAccountPageComponent {
   public form: FormGroup;
   public selectAccounts: any[];
   public error: AppError;
@@ -29,17 +28,17 @@ export class NewAccountPage {
     private router: Router,
     private accountService: AccountService,
     private orgService: OrgService,
-    private fb: FormBuilder) {
-
+    private fb: FormBuilder,
+  ) {
     let org = this.orgService.getCurrentOrg();
     this.form = fb.group({
-      'name': ['', Validators.required],
-      'currency': [org.currency],
-      'precision': [org.precision],
-      'parent': [null, Validators.required]
+      name: ['', Validators.required],
+      currency: [org.currency],
+      precision: [org.precision],
+      parent: [null, Validators.required],
     });
 
-    this.accountService.getAccountTree().subscribe(tree => {
+    this.accountService.getAccountTree().subscribe((tree) => {
       this.accountTree = tree;
       this.selectAccounts = tree.getFlattenedAccounts();
     });
@@ -50,7 +49,7 @@ export class NewAccountPage {
     account.id = Util.newGuid();
     let parentAccount = this.accountTree.accountMap[account.parent];
 
-    if(!parentAccount) {
+    if (!parentAccount) {
       this.error = new AppError('Invalid parent account');
       return;
     }
@@ -59,17 +58,16 @@ export class NewAccountPage {
     account.orgId = org.id;
     account.debitBalance = parentAccount.debitBalance;
     account.currency = account.currency || parentAccount.currency;
-    account.precision = account.precision !== null ? account.precision : parentAccount.precision;
+    account.precision =
+      account.precision !== null ? account.precision : parentAccount.precision;
 
-    this.accountService.newAccount(account)
-      .subscribe(
-        account => {
-          this.router.navigate(['/accounts']);
-        },
-        err => {
-          this.error = err;
-        }
-    );
+    this.accountService.newAccount(account).subscribe({
+      next: (account) => {
+        this.router.navigate(['/accounts']);
+      },
+      error: (err) => {
+        this.error = err;
+      },
+    });
   }
-
 }

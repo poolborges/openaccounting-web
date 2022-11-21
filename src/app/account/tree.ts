@@ -7,12 +7,12 @@ import { AccountService } from '../core/account.service';
 import { OrgService } from '../core/org.service';
 import { ConfigService } from '../core/config.service';
 import { SessionService } from '../core/session.service';
-import { Observable } from 'rxjs/Observable';
+import { Observable, tap } from 'rxjs';
 
 @Component({
-  selector: 'account-tree',
+  selector: 'app-account-tree',
   templateUrl: 'tree.html',
-  styleUrls: ['./tree.scss']
+  styleUrls: ['./tree.scss'],
 })
 export class TreeComponent implements OnInit {
   public accounts$: Observable<Account[]>;
@@ -27,8 +27,8 @@ export class TreeComponent implements OnInit {
     private accountService: AccountService,
     private orgService: OrgService,
     private configService: ConfigService,
-    private sessionService: SessionService) {
-  }
+    private sessionService: SessionService,
+  ) {}
 
   ngOnInit() {
     this.sessionService.setLoading(true);
@@ -37,22 +37,20 @@ export class TreeComponent implements OnInit {
     this.visibleAccounts = {};
 
     this.log.debug('tree init');
-    this.accounts$ = this.accountService.getFlattenedAccounts()
-      .do(accounts => {
+    this.accounts$ = this.accountService.getFlattenedAccounts().pipe(
+      tap((accounts) => {
         this.log.debug('NEW TREE');
         this.sessionService.setLoading(false);
         this.expandTopLevel(accounts);
-      }
+      }),
     );
   }
 
-
   expandTopLevel(accounts: Account[]) {
-
-    for(let account of accounts) {
-      if(account.depth === 1 && this.isExpanded(account)) {
+    for (let account of accounts) {
+      if (account.depth === 1 && this.isExpanded(account)) {
         this.showExpandedDescendants(account);
-      } else if(account.depth === 1) {
+      } else if (account.depth === 1) {
         this.showAccount(account);
       }
     }
@@ -80,10 +78,10 @@ export class TreeComponent implements OnInit {
   }
 
   click(account) {
-    if(account.children.length) {
+    if (account.children.length) {
       this.toggleExpanded(account);
 
-      if(this.isExpanded(account)) {
+      if (this.isExpanded(account)) {
         this.showExpandedDescendants(account);
       } else {
         this.hideDescendants(account);
@@ -102,7 +100,7 @@ export class TreeComponent implements OnInit {
   }
 
   hideDescendants(account: Account) {
-    account.children.forEach(child => {
+    account.children.forEach((child) => {
       this.hideAccount(child);
       this.hideDescendants(child);
     });
@@ -111,13 +109,12 @@ export class TreeComponent implements OnInit {
   showExpandedDescendants(account: Account) {
     this.showAccount(account);
 
-    account.children.forEach(child => {
+    account.children.forEach((child) => {
       this.showAccount(child);
 
-      if(this.isExpanded(child)) {
+      if (this.isExpanded(child)) {
         this.showExpandedDescendants(child);
       }
     });
   }
-
 }

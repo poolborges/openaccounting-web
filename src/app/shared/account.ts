@@ -16,8 +16,8 @@ export class AccountApi {
   constructor(options: any = {}) {
     this.id = options.id;
     this.orgId = options.orgId;
-    this.inserted = options.inserted ? new Date(options.inserted): null;
-    this.updated = options.updated ? new Date(options.updated): null;
+    this.inserted = options.inserted ? new Date(options.inserted) : null;
+    this.updated = options.updated ? new Date(options.updated) : null;
     this.name = options.name;
     this.parent = options.parent ? options.parent : '';
     this.currency = options.currency;
@@ -26,7 +26,9 @@ export class AccountApi {
     this.balance = options.balance;
     this.nativeBalance = options.nativeBalance;
     this.readOnly = options.readOnly;
-    this.recentTxCount = options.recentTxCount ? parseInt(options.recentTxCount) : 0;
+    this.recentTxCount = options.recentTxCount
+      ? parseInt(options.recentTxCount)
+      : 0;
     this.price = options.price;
   }
 }
@@ -69,12 +71,15 @@ export class Account {
     this.balance = options.balance || 0;
     this.totalBalance = options.totalBalance || 0;
     this.nativeBalanceCost = options.nativeBalance || 0;
-    this.totalNativeBalanceCost = options.totalNativeBalanceCost || options.totalNativeBalance || 0;
+    this.totalNativeBalanceCost =
+      options.totalNativeBalanceCost || options.totalNativeBalance || 0;
     this.nativeBalancePrice = options.nativeBalancePrice || 0;
     this.totalNativeBalancePrice = options.totalNativeBalancePrice || 0;
     this.price = options.price || 0;
     this.orgCurrency = options.orgCurrency;
-    this.orgPrecision = options.orgPrecision ? parseInt(options.orgPrecision) : 0;
+    this.orgPrecision = options.orgPrecision
+      ? parseInt(options.orgPrecision)
+      : 0;
     this.readOnly = options.readOnly;
     this.depth = options.depth;
     this.recentTxCount = options.recentTxCount || 0;
@@ -83,7 +88,7 @@ export class Account {
 }
 
 export class AccountTree {
-  accountMap: { [accountId: number]: Account; };
+  accountMap: { [accountId: number]: Account };
   rootAccount: Account;
 
   constructor(options: any = {}) {
@@ -92,13 +97,13 @@ export class AccountTree {
   }
 
   getFlattenedAccounts(node?: Account): Account[] {
-    if(!node) {
+    if (!node) {
       node = this.rootAccount;
     }
 
     let flattened = [];
 
-    for(let account of node.children) {
+    for (let account of node.children) {
       flattened.push(account);
       flattened = flattened.concat(this.getFlattenedAccounts(account));
     }
@@ -106,12 +111,12 @@ export class AccountTree {
     return flattened;
   }
 
-  getAccountByName (name: string, depth?: number): Account {
-    for(let id in this.accountMap) {
+  getAccountByName(name: string, depth?: number): Account {
+    for (let id in this.accountMap) {
       let account = this.accountMap[id];
 
-      if(account.name === name) {
-        if(!depth || account.depth === depth) {
+      if (account.name === name) {
+        if (!depth || account.depth === depth) {
           return account;
         }
       }
@@ -121,12 +126,12 @@ export class AccountTree {
   }
 
   accountIsChildOf(account: Account, parent: Account) {
-    for(let child of parent.children) {
-      if(child.id === account.id) {
+    for (let child of parent.children) {
+      if (child.id === account.id) {
         return true;
       }
 
-      if(this.accountIsChildOf(account, child)) {
+      if (this.accountIsChildOf(account, child)) {
         return true;
       }
     }
@@ -135,15 +140,15 @@ export class AccountTree {
   }
 
   getAccountAtoms(node?: Account): Account[] {
-    if(!node) {
+    if (!node) {
       node = this.rootAccount;
     }
 
     let accounts = [];
 
-    for(let i = 0; i < node.children.length; i++) {
+    for (let i = 0; i < node.children.length; i++) {
       let child = node.children[i];
-      if(!child.children.length) {
+      if (!child.children.length) {
         accounts.push(child);
       } else {
         accounts = accounts.concat(this.getAccountAtoms(child));
@@ -158,7 +163,7 @@ export class AccountTree {
 
     let accountArray = [account.name];
 
-    while(node.parent.depth >= depth) {
+    while (node.parent.depth >= depth) {
       node = node.parent;
       accountArray.unshift(node.name);
     }

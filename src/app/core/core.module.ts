@@ -1,4 +1,9 @@
-import { ModuleWithProviders, NgModule, Optional, SkipSelf } from '@angular/core';
+import {
+  ModuleWithProviders,
+  NgModule,
+  Optional,
+  SkipSelf,
+} from '@angular/core';
 
 import { CommonModule } from '@angular/common';
 
@@ -16,22 +21,22 @@ import { WebSocketService } from './websocket.service';
 import { ApiKeyService } from './apikey.service';
 import { HttpClientModule } from '@angular/common/http';
 
-
 @NgModule({
-  imports:      [CommonModule, HttpClientModule],
+  imports: [CommonModule, HttpClientModule],
   declarations: [],
-  exports:      [],
-  providers:    []
+  exports: [],
+  providers: [],
 })
 export class CoreModule {
-  constructor (@Optional() @SkipSelf() parentModule: CoreModule) {
+  constructor(@Optional() @SkipSelf() parentModule: CoreModule) {
     if (parentModule) {
       throw new Error(
-        'CoreModule is already loaded. Import it in the AppModule only');
+        'CoreModule is already loaded. Import it in the AppModule only',
+      );
     }
   }
 
-  static forRoot(): ModuleWithProviders {
+  static forRoot(): ModuleWithProviders<CoreModule> {
     return {
       ngModule: CoreModule,
       providers: [
@@ -45,8 +50,8 @@ export class CoreModule {
         UserService,
         PriceService,
         WebSocketService,
-        ApiKeyService
-      ]
+        ApiKeyService,
+      ],
     };
   }
 }

@@ -1,20 +1,19 @@
 import { Component } from '@angular/core';
 import { Router, ActivatedRoute } from '@angular/router';
-import { 
+import {
   FormGroup,
   Validators,
   FormBuilder,
-  AbstractControl
+  AbstractControl,
 } from '@angular/forms';
 import { AppError } from '../shared/error';
 import { UserService } from '../core/user.service';
 
-
 @Component({
   selector: 'app-resetpassword',
-  templateUrl: 'reset.html'
+  templateUrl: 'reset.html',
 })
-export class ResetPasswordPage {
+export class ResetPasswordPageComponent {
   public error: AppError;
   public success: boolean;
   public changePasswordForm: FormGroup;
@@ -24,39 +23,50 @@ export class ResetPasswordPage {
     private router: Router,
     private route: ActivatedRoute,
     private userService: UserService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
   ) {
-    this.route.queryParams.subscribe(params => {
-      this.code = params['code'];
+    this.route.queryParams.subscribe({
+      next: (params) => {
+        this.code = params['code'];
 
-      if(!this.code) {
-        throw new Error('Missing code');
-      }
-    }, err => {
-      this.error = err;
+        if (!this.code) {
+          throw new Error('Missing code');
+        }
+      },
+      error: (err) => {
+        this.error = err;
+      },
     });
 
-    this.changePasswordForm = this.fb.group({
-      'password': [null, Validators.required],
-      'password2': [null, Validators.required]
-    }, {
-      validator: this.passwordMatchValidator
-    });
+    this.changePasswordForm = this.fb.group(
+      {
+        password: [null, Validators.required],
+        password2: [null, Validators.required],
+      },
+      {
+        validator: this.passwordMatchValidator,
+      },
+    );
   }
 
   passwordMatchValidator(control: AbstractControl) {
-    if(control.get('password').value === control.get('password2').value) {
+    if (control.get('password').value === control.get('password2').value) {
       return null;
     } else {
-      control.get('password2').setErrors({mismatchedPassword: true});
+      control.get('password2').setErrors({ mismatchedPassword: true });
     }
   }
 
   changePassword() {
-    this.userService.confirmResetPassword(this.changePasswordForm.value.password, this.code).subscribe(() => {
-      this.success = true;
-    }, err => {
-      this.error = err;
-    });
+    this.userService
+      .confirmResetPassword(this.changePasswordForm.value.password, this.code)
+      .subscribe({
+        next: () => {
+          this.success = true;
+        },
+        error: (err) => {
+          this.error = err;
+        },
+      });
   }
 }

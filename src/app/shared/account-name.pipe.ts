@@ -1,16 +1,15 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-@Pipe({name: 'accountName'})
+@Pipe({ name: 'accountName' })
 export class AccountNamePipe implements PipeTransform {
-  constructor() {
-  }
+  constructor() {}
 
   transform(name: string, depth: number): string {
     let parts = name.split(':');
 
     let accountString = '';
 
-    if(!depth) {
+    if (!depth) {
       depth = 1;
     }
 

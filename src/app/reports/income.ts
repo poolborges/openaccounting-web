@@ -3,19 +3,18 @@ import { AccountService } from '../core/account.service';
 import { OrgService } from '../core/org.service';
 import { ConfigService } from '../core/config.service';
 import { SessionService } from '../core/session.service';
-import { Observable } from 'rxjs/Observable';
-import { Subscription } from 'rxjs/Subscription';
-import 'rxjs/add/observable/zip';
+import { Observable } from 'rxjs';
+import { Subscription, zip } from 'rxjs';
 import { Account, AccountTree } from '../shared/account';
 import { Org } from '../shared/org';
-import { TxListPage } from '../transaction/list';
-import { 
+import { TxListPageComponent } from '../transaction/list';
+import {
   FormGroup,
   FormControl,
   Validators,
   FormBuilder,
   AbstractControl,
-  ValidationErrors
+  ValidationErrors,
 } from '@angular/forms';
 import { AppError } from '../shared/error';
 import { DateUtil } from '../shared/dateutil';
@@ -23,9 +22,9 @@ import { DateUtil } from '../shared/dateutil';
 @Component({
   selector: 'app-income',
   templateUrl: 'income.html',
-  styleUrls: ['./reports.scss']
+  styleUrls: ['./reports.scss'],
 })
-export class IncomeReport {
+export class IncomeReportComponent {
   public org: Org;
   public startDate: Date;
   public endDate: Date;
@@ -43,8 +42,8 @@ export class IncomeReport {
     private accountService: AccountService,
     private orgService: OrgService,
     private configService: ConfigService,
-    private sessionService: SessionService) {
-  }
+    private sessionService: SessionService,
+  ) {}
 
   ngOnInit() {
     this.sessionService.setLoading(true);
@@ -57,24 +56,31 @@ export class IncomeReport {
 
     let reportData = this.configService.get('reportData');
 
-    if(reportData && reportData.income) {
+    if (reportData && reportData.income) {
       let reportConfig = reportData.income;
-      if(reportConfig.startDate) {
+      if (reportConfig.startDate) {
         this.startDate = new Date(reportConfig.startDate);
       }
 
-      if(reportConfig.endDate) {
+      if (reportConfig.endDate) {
         this.endDate = new Date(reportConfig.endDate);
       }
     }
 
     this.form = this.fb.group({
-      startDate: [DateUtil.getLocalDateString(this.startDate, this.org.timezone), Validators.required],
-      endDate: [DateUtil.getLocalDateStringExcl(this.endDate, this.org.timezone), Validators.required]
+      startDate: [
+        DateUtil.getLocalDateString(this.startDate, this.org.timezone),
+        Validators.required,
+      ],
+      endDate: [
+        DateUtil.getLocalDateStringExcl(this.endDate, this.org.timezone),
+        Validators.required,
+      ],
     });
 
-    this.treeSubscription = this.accountService.getAccountTreeWithPeriodBalance(this.startDate, this.endDate)
-      .subscribe(tree => {
+    this.treeSubscription = this.accountService
+      .getAccountTreeWithPeriodBalance(this.startDate, this.endDate)
+      .subscribe((tree) => {
         this.sessionService.setLoading(false);
         this.incomeAccount = tree.getAccountByName('Income', 1);
         this.incomeAccounts = tree.getFlattenedAccounts(this.incomeAccount);
@@ -91,19 +97,25 @@ export class IncomeReport {
     this.treeSubscription.unsubscribe();
     //this.dataService.setLoading(true);
     this.showDateForm = false;
-    this.startDate = DateUtil.getDateFromLocalDateString(this.form.value.startDate, this.org.timezone);
-    this.endDate = DateUtil.getDateFromLocalDateStringExcl(this.form.value.endDate, this.org.timezone);
+    this.startDate = DateUtil.getDateFromLocalDateString(
+      this.form.value.startDate,
+      this.org.timezone,
+    );
+    this.endDate = DateUtil.getDateFromLocalDateStringExcl(
+      this.form.value.endDate,
+      this.org.timezone,
+    );
 
     let reportData = this.configService.get('reportData');
 
-    if(!reportData) {
+    if (!reportData) {
       reportData = {};
     }
 
     reportData.income = {
       startDate: this.startDate,
-      endDate: this.endDate
-    }
+      endDate: this.endDate,
+    };
 
     this.configService.put('reportData', reportData);
 

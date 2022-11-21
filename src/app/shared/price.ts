@@ -11,7 +11,7 @@ export class Price {
     this.currency = options.currency;
     this.date = options.date ? new Date(options.date) : null;
     this.inserted = options.inserted ? new Date(options.inserted) : null;
-    this.updated = options.updated ? new Date(options.updated) : null; 
+    this.updated = options.updated ? new Date(options.updated) : null;
     this.price = options.price;
   }
 }

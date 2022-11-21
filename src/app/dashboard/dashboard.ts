@@ -8,10 +8,9 @@ import { Transaction, Split } from '../shared/transaction';
 import { Org } from '../shared/org';
 import { Account, AccountTree } from '../shared/account';
 import { DateUtil } from '../shared/dateutil';
-import { TxListPage } from '../transaction/list';
-import { IncomeReport } from '../reports/income';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/operator/take';
+import { TxListPageComponent } from '../transaction/list';
+import { IncomeReportComponent } from '../reports/income';
+import { map, Observable, switchMap, take, tap } from 'rxjs';
 
 class RecentTx {
   split: Split;
@@ -21,11 +20,11 @@ class RecentTx {
 }
 
 @Component({
- selector: 'app-dashboard',
- templateUrl: 'dashboard.html',
- styleUrls: ['./dashboard.scss']
+  selector: 'app-dashboard',
+  templateUrl: 'dashboard.html',
+  styleUrls: ['./dashboard.scss'],
 })
-export class DashboardPage implements OnInit {
+export class DashboardPageComponent implements OnInit {
   public org: Org;
   public expenseAmount: number;
   public budgetExpanded: boolean = false;
@@ -41,8 +40,8 @@ export class DashboardPage implements OnInit {
     private txService: TransactionService,
     private accountService: AccountService,
     private orgService: OrgService,
-    private sessionService: SessionService) {
-  }
+    private sessionService: SessionService,
+  ) {}
 
   ngOnInit() {
     this.sessionService.setLoading(true);
@@ -53,79 +52,99 @@ export class DashboardPage implements OnInit {
 
     let periodStart = DateUtil.getPeriodStart(this.org.timezone);
 
-    let tree$ = this.accountService.getAccountTreeWithPeriodBalance(periodStart);
+    let tree$ =
+      this.accountService.getAccountTreeWithPeriodBalance(periodStart);
 
-    tree$.do(tree => {
-      let expenses = tree.getAccountByName('Expenses', 1);
+    tree$
+      .pipe(
+        tap((tree: AccountTree) => {
+          let expenses = tree.getAccountByName('Expenses', 1);
 
-      this.expenseAmount = expenses.totalNativeBalanceCost;
+          this.expenseAmount = expenses.totalNativeBalanceCost;
 
-      this.expenseAccounts = tree.getFlattenedAccounts().filter(account => {
-        return tree.accountIsChildOf(account, expenses) && account.recentTxCount;
-      }).sort((a, b) => {
-        return b.recentTxCount - a.recentTxCount;
-      }).slice(0, this.numBudgetItems * 2);
+          this.expenseAccounts = tree
+            .getFlattenedAccounts()
+            .filter((account) => {
+              return (
+                tree.accountIsChildOf(account, expenses) &&
+                account.recentTxCount
+              );
+            })
+            .sort((a, b) => {
+              return b.recentTxCount - a.recentTxCount;
+            })
+            .slice(0, this.numBudgetItems * 2);
 
-      this.hiddenExpenses = {};
+          this.hiddenExpenses = {};
 
-      this.expenseAccounts.forEach((account, index) => {
-        if(index >= this.numBudgetItems) {
-          this.hiddenExpenses[account.id] = true;
-        }
-      });
-    })
-    .switchMap(tree => {
-      let expenses = tree.getAccountByName('Expenses', 1);
-      let income = tree.getAccountByName('Income', 1);
+          this.expenseAccounts.forEach((account, index) => {
+            if (index >= this.numBudgetItems) {
+              this.hiddenExpenses[account.id] = true;
+            }
+          });
+        }),
+        switchMap((tree) => {
+          let expenses = tree.getAccountByName('Expenses', 1);
+          let income = tree.getAccountByName('Income', 1);
 
-      return this.txService.getLastTransactions(this.numSplits * 4).take(1)
-        .map(txs => {
-          this.log.debug('lastTxs');
-          this.log.debug(txs);
-          return txs.map(tx => {
-            let splits = tx.splits.filter(split => {
-              let account = tree.accountMap[split.accountId];
-              if(!account || !split.amount) {
-                return false;
-              }
+          return this.txService.getLastTransactions(this.numSplits * 4).pipe(
+            take(1),
+            map((txs: Transaction[]) => {
+              this.log.debug('lastTxs');
+              this.log.debug(txs);
+              return txs
+                .map((tx) => {
+                  let splits = tx.splits.filter((split) => {
+                    let account = tree.accountMap[split.accountId];
+                    if (!account || !split.amount) {
+                      return false;
+                    }
 
-              return tree.accountIsChildOf(account, expenses) || tree.accountIsChildOf(account, income);
-            });
+                    return (
+                      tree.accountIsChildOf(account, expenses) ||
+                      tree.accountIsChildOf(account, income)
+                    );
+                  });
 
-            // If it's not an income or expense transaction but it has 2 splits we can still display something
-            if(!splits.length && tx.splits.length === 2) {
-              splits = tx.splits.filter(split => {
-                return split.amount < 0;
+                  // If it's not an income or expense transaction but it has 2 splits we can still display something
+                  if (!splits.length && tx.splits.length === 2) {
+                    splits = tx.splits.filter((split) => {
+                      return split.amount < 0;
+                    });
+                  }
+
+                  return splits.map((split) => {
+                    let recentTx = new RecentTx();
+                    recentTx.split = split;
+                    recentTx.account = tree.accountMap[split.accountId];
+                    recentTx.tx = tx;
+                    return recentTx;
+                  });
+                })
+                .reduce((acc, recentTxs) => {
+                  return acc.concat(recentTxs);
+                }, []);
+            }),
+            map((recentTxs: RecentTx[]) => {
+              return recentTxs.slice(0, this.numSplits * 2);
+            }),
+            map((recentTxs: RecentTx[]) => {
+              return recentTxs.map((recentTx, index) => {
+                if (index >= this.numSplits) {
+                  recentTx.hidden = true;
+                }
+
+                return recentTx;
               });
-            }
-
-            return splits.map(split => {
-              let recentTx = new RecentTx();
-              recentTx.split = split;
-              recentTx.account = tree.accountMap[split.accountId];
-              recentTx.tx = tx;
-              return recentTx;
-            });
-          }).reduce((acc, recentTxs) => {
-            return acc.concat(recentTxs);
-          }, [])
-        }).map(recentTxs => {
-          return recentTxs.slice(0, this.numSplits * 2);
-        }).map(recentTxs => {
-          return recentTxs.map((recentTx, index) => {
-            if(index >= this.numSplits) {
-              recentTx.hidden = true;
-            }
-
-            return recentTx;
-          })
-        });
-    })
-    .subscribe(recentTxs => {
-      this.log.debug('recentTxs', recentTxs);
-      this.recentTxs = recentTxs;
-      this.sessionService.setLoading(false);
-    });
+            }),
+          );
+        }),
+      )
+      .subscribe((recentTxs: RecentTx[]) => {
+        this.log.debug('recentTxs', recentTxs);
+        this.recentTxs = recentTxs;
+        this.sessionService.setLoading(false);
+      });
   }
 
   toggleExpandedBudget() {

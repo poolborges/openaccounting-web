@@ -19,13 +19,15 @@ export class Transaction {
     this.description = options.description;
     this.data = options.data;
     this.deleted = options.deleted;
-    this.splits = options.splits ? options.splits.map(split => new Split(split)) : [];
+    this.splits = options.splits
+      ? options.splits.map((split) => new Split(split))
+      : [];
   }
 
   getData(): any {
     try {
       return JSON.parse(this.data);
-    } catch(e) {
+    } catch (e) {
       return {};
     }
   }
@@ -43,7 +45,7 @@ export class Split {
   accountId: string;
   amount: number;
   nativeAmount: number;
-  constructor(init?:Partial<Split>) {
+  constructor(init?: Partial<Split>) {
     Object.assign(this, init);
   }
 }

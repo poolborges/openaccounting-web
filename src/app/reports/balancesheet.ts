@@ -3,18 +3,18 @@ import { AccountService } from '../core/account.service';
 import { OrgService } from '../core/org.service';
 import { ConfigService } from '../core/config.service';
 import { SessionService } from '../core/session.service';
-import { Observable } from 'rxjs/Observable';
-import { Subscription } from 'rxjs/Subscription';
+import { Observable } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { Account } from '../shared/account';
 import { Org } from '../shared/org';
-import { TxListPage } from '../transaction/list';
-import { 
+import { TxListPageComponent } from '../transaction/list';
+import {
   FormGroup,
   FormControl,
   Validators,
   FormBuilder,
   AbstractControl,
-  ValidationErrors
+  ValidationErrors,
 } from '@angular/forms';
 import { AppError } from '../shared/error';
 import { DateUtil } from '../shared/dateutil';
@@ -22,9 +22,9 @@ import { DateUtil } from '../shared/dateutil';
 @Component({
   selector: 'app-balancesheet',
   templateUrl: 'balancesheet.html',
-  styleUrls: ['./reports.scss']
+  styleUrls: ['./reports.scss'],
 })
-export class BalanceSheetReport {
+export class BalanceSheetReportComponent {
   public org: Org;
   public date: Date;
   public assetAccount: Account;
@@ -45,19 +45,20 @@ export class BalanceSheetReport {
     private accountService: AccountService,
     private orgService: OrgService,
     private configService: ConfigService,
-    private sessionService: SessionService) {
+    private sessionService: SessionService,
+  ) {
     this.date = new Date();
     this.priceSource = 'price';
 
     let reportData = this.configService.get('reportData');
 
-    if(reportData && reportData.balanceSheet) {
+    if (reportData && reportData.balanceSheet) {
       let reportConfig = reportData.balanceSheet;
-      if(reportConfig.date) {
+      if (reportConfig.date) {
         this.date = new Date(reportConfig.date);
       }
 
-      if(reportConfig.priceSource) {
+      if (reportConfig.priceSource) {
         this.priceSource = reportConfig.priceSource;
       }
     }
@@ -65,24 +66,30 @@ export class BalanceSheetReport {
     this.org = this.orgService.getCurrentOrg();
 
     this.form = fb.group({
-      date: [DateUtil.getLocalDateStringExcl(this.date, this.org.timezone), Validators.required],
-      priceSource: [this.priceSource, Validators.required]
+      date: [
+        DateUtil.getLocalDateStringExcl(this.date, this.org.timezone),
+        Validators.required,
+      ],
+      priceSource: [this.priceSource, Validators.required],
     });
   }
 
-  ngOnInit() {
+  onInit() {
     this.sessionService.setLoading(true);
     this.amounts = {};
     this.assetAccount = null;
 
-    this.treeSubscription = this.accountService.getAccountTreeAtDate(this.date)
-      .subscribe(tree => {
+    this.treeSubscription = this.accountService
+      .getAccountTreeAtDate(this.date)
+      .subscribe((tree) => {
         this.sessionService.setLoading(false);
         this.assetAccount = tree.getAccountByName('Assets', 1);
         this.assetAccounts = tree.getFlattenedAccounts(this.assetAccount);
 
         this.liabilityAccount = tree.getAccountByName('Liabilities', 1);
-        this.liabilityAccounts = tree.getFlattenedAccounts(this.liabilityAccount);
+        this.liabilityAccounts = tree.getFlattenedAccounts(
+          this.liabilityAccount,
+        );
 
         this.equityAccount = tree.getAccountByName('Equity', 1);
         this.equityAccounts = tree.getFlattenedAccounts(this.equityAccount);
@@ -95,10 +102,12 @@ export class BalanceSheetReport {
           name: 'Retained Earnings',
           depth: 2,
           children: [null], // hack to fool template into not displaying a link
-          totalNativeBalanceCost: incomeAccount.totalNativeBalanceCost +
+          totalNativeBalanceCost:
+            incomeAccount.totalNativeBalanceCost +
             expenseAccount.totalNativeBalanceCost,
-          totalNativeBalancePrice: incomeAccount.totalNativeBalancePrice +
-            expenseAccount.totalNativeBalancePrice
+          totalNativeBalancePrice:
+            incomeAccount.totalNativeBalancePrice +
+            expenseAccount.totalNativeBalancePrice,
         });
 
         let unrealizedGains = new Account({
@@ -106,14 +115,18 @@ export class BalanceSheetReport {
           name: 'Unrealized Gains',
           depth: 2,
           children: [null], // hack to fool template into not displaying a link
-          totalNativeBalanceCost: -(this.assetAccount.totalNativeBalanceCost +
+          totalNativeBalanceCost: -(
+            this.assetAccount.totalNativeBalanceCost +
             this.liabilityAccount.totalNativeBalanceCost +
             this.equityAccount.totalNativeBalanceCost +
-            retainedEarnings.totalNativeBalanceCost),
-          totalNativeBalancePrice: -(this.assetAccount.totalNativeBalancePrice +
+            retainedEarnings.totalNativeBalanceCost
+          ),
+          totalNativeBalancePrice: -(
+            this.assetAccount.totalNativeBalancePrice +
             this.liabilityAccount.totalNativeBalancePrice +
             this.equityAccount.totalNativeBalancePrice +
-            retainedEarnings.totalNativeBalancePrice)
+            retainedEarnings.totalNativeBalancePrice
+          ),
         });
 
         this.equityAccounts.push(retainedEarnings);
@@ -121,10 +134,12 @@ export class BalanceSheetReport {
 
         // TODO is this modifying a tree that might be used elsewhere?
         // Not all functions are pure...
-        this.equityAccount.totalNativeBalanceCost = -this.assetAccount.totalNativeBalanceCost
-          - this.liabilityAccount.totalNativeBalanceCost;
-        this.equityAccount.totalNativeBalancePrice = -this.assetAccount.totalNativeBalancePrice
-          - this.liabilityAccount.totalNativeBalancePrice;
+        this.equityAccount.totalNativeBalanceCost =
+          -this.assetAccount.totalNativeBalanceCost -
+          this.liabilityAccount.totalNativeBalanceCost;
+        this.equityAccount.totalNativeBalancePrice =
+          -this.assetAccount.totalNativeBalancePrice -
+          this.liabilityAccount.totalNativeBalancePrice;
 
         // this.dataService.setLoading(false);
       });
@@ -134,27 +149,29 @@ export class BalanceSheetReport {
     this.treeSubscription.unsubscribe();
     //this.dataService.setLoading(true);
     this.showOptionsForm = false;
-    this.date = DateUtil.getDateFromLocalDateStringExcl(this.form.value.date, this.org.timezone);
+    this.date = DateUtil.getDateFromLocalDateStringExcl(
+      this.form.value.date,
+      this.org.timezone,
+    );
     this.priceSource = this.form.value.priceSource;
 
     let reportData = this.configService.get('reportData');
 
-    if(!reportData) {
+    if (!reportData) {
       reportData = {};
     }
 
     reportData.balanceSheet = {
       date: this.date,
-      priceSource: this.priceSource
-    }
+      priceSource: this.priceSource,
+    };
 
     this.configService.put('reportData', reportData);
 
-    this.ngOnInit();
+    this.onInit();
   }
 
   toggleShowOptionsForm() {
     this.showOptionsForm = !this.showOptionsForm;
   }
-
 }

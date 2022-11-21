@@ -8,8 +8,20 @@ import { DebitCreditPipe } from './debit-credit.pipe';
 
 @NgModule({
   imports: [],
-  declarations: [CurrencyFormatPipe, AccountNamePipe, AccountBalancePipe, DateTzPipe, DebitCreditPipe],
-  exports: [CurrencyFormatPipe, AccountNamePipe, AccountBalancePipe, DateTzPipe, DebitCreditPipe],
-  providers: [DecimalPipe, CurrencyFormatPipe]
+  declarations: [
+    CurrencyFormatPipe,
+    AccountNamePipe,
+    AccountBalancePipe,
+    DateTzPipe,
+    DebitCreditPipe,
+  ],
+  exports: [
+    CurrencyFormatPipe,
+    AccountNamePipe,
+    AccountBalancePipe,
+    DateTzPipe,
+    DebitCreditPipe,
+  ],
+  providers: [DecimalPipe, CurrencyFormatPipe],
 })
-export class SharedModule { }
+export class SharedModule {}

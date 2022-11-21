@@ -4,8 +4,8 @@ import { WebSocketService } from './websocket.service';
 import { TransactionService } from './transaction.service';
 import { PriceService } from './price.service';
 import { SessionService } from './session.service';
-import { Observable } from 'rxjs/Observable';
-import { EmptyObservable } from 'rxjs/observable/EmptyObservable';
+import { Observable, of } from 'rxjs';
+import { EMPTY } from 'rxjs';
 import { Logger } from '../core/logger';
 
 import { AccountApi } from '../shared/account';
@@ -20,7 +20,7 @@ var rawAccounts = [
     name: 'Root',
     currency: 'USD',
     precision: 2,
-    debitBalance: true
+    debitBalance: true,
   }),
   new AccountApi({
     id: '2',
@@ -29,7 +29,7 @@ var rawAccounts = [
     currency: 'USD',
     precision: 2,
     debitBalance: true,
-    parent: '1'
+    parent: '1',
   }),
   new AccountApi({
     id: '3',
@@ -38,7 +38,7 @@ var rawAccounts = [
     currency: 'USD',
     precision: 2,
     debitBalance: false,
-    parent: '1'
+    parent: '1',
   }),
   new AccountApi({
     id: '4',
@@ -47,7 +47,7 @@ var rawAccounts = [
     currency: 'USD',
     precision: 2,
     debitBalance: false,
-    parent: '1'
+    parent: '1',
   }),
   new AccountApi({
     id: '5',
@@ -58,7 +58,7 @@ var rawAccounts = [
     debitBalance: true,
     parent: '2',
     balance: 1000000,
-    nativeBalance: 7000
+    nativeBalance: 7000,
   }),
   new AccountApi({
     id: '6',
@@ -67,7 +67,7 @@ var rawAccounts = [
     currency: 'USD',
     precision: 2,
     debitBalance: true,
-    parent: '2'
+    parent: '2',
   }),
   new AccountApi({
     id: '7',
@@ -78,7 +78,7 @@ var rawAccounts = [
     debitBalance: true,
     parent: '6',
     balance: 1000,
-    nativeBalance: 1000
+    nativeBalance: 1000,
   }),
   new AccountApi({
     id: '8',
@@ -89,33 +89,31 @@ var rawAccounts = [
     debitBalance: true,
     parent: '6',
     balance: 2000,
-    nativeBalance: 2000
-  })
+    nativeBalance: 2000,
+  }),
 ];
 
-class Mock {
+class Mock {}
 
-}
-
-class ApiMock  {
+class ApiMock {
   getAccounts() {
-    return Observable.of(rawAccounts);
+    return of(rawAccounts);
   }
 }
 
 class SessionMock {
   getSessions() {
-    return new EmptyObservable();
+    return EMPTY;
   }
 }
 
 class TransactionMock {
   getNewTransactions() {
-    return new EmptyObservable();
+    return EMPTY;
   }
 
   getDeletedTransactions() {
-    return new EmptyObservable();
+    return EMPTY;
   }
 
   getRecentTransactions() {
@@ -127,17 +125,17 @@ class TransactionMock {
           {
             accountId: '7',
             amount: -1000,
-            nativeAmount: -1000
+            nativeAmount: -1000,
           },
           {
             accountId: '4',
             amount: 1000,
-            nativeAmount: 1000
-          }
-        ]
-      })
+            nativeAmount: 1000,
+          },
+        ],
+      }),
     ];
-    return Observable.of(txs);
+    return of(txs);
   }
 }
 
@@ -148,10 +146,10 @@ class PriceMock {
         id: '1',
         currency: 'BTC',
         date: new Date('2018-09-24'),
-        price: 10000
-      })
+        price: 10000,
+      }),
     ];
-    return Observable.of(prices);
+    return of(prices);
   }
 }
 
@@ -159,23 +157,23 @@ describe('AccountService', () => {
   describe('#getAccountTree', () => {
     it('should correctly create an AccountTree', (done) => {
       let as = new AccountService(
-        new Logger,
+        new Logger(),
         new ApiMock() as ApiService,
         new Mock() as WebSocketService,
         new TransactionMock() as any,
         new PriceMock() as any,
-        new SessionMock() as any
+        new SessionMock() as any,
       );
 
-      as['accountWs$'] = Observable.empty();
+      as['accountWs$'] = EMPTY;
 
       as['org'] = new Org({
         id: '1',
         currency: 'USD',
-        precision: 2
+        precision: 2,
       });
 
-      as.getAccountTree().subscribe(tree => {
+      as.getAccountTree().subscribe((tree) => {
         console.log(tree);
         expect(tree.rootAccount.name).toEqual('Root');
         expect(tree.rootAccount.depth).toEqual(0);
@@ -187,8 +185,12 @@ describe('AccountService', () => {
         expect(tree.rootAccount.children[0].fullName).toEqual('Assets');
         expect(tree.rootAccount.children[0].depth).toEqual(1);
         expect(tree.rootAccount.children[0].totalBalance).toEqual(3000);
-        expect(tree.rootAccount.children[0].totalNativeBalanceCost).toEqual(10000);
-        expect(tree.rootAccount.children[0].totalNativeBalancePrice).toEqual(13000);
+        expect(tree.rootAccount.children[0].totalNativeBalanceCost).toEqual(
+          10000,
+        );
+        expect(tree.rootAccount.children[0].totalNativeBalancePrice).toEqual(
+          13000,
+        );
         expect(tree.rootAccount.children[1].name).toEqual('Equity');
         expect(tree.rootAccount.children[1].fullName).toEqual('Equity');
         expect(tree.rootAccount.children[1].depth).toEqual(1);
@@ -212,11 +214,15 @@ describe('AccountService', () => {
         let currentAssets = assets.children[1];
         expect(currentAssets.children.length).toEqual(2);
         expect(currentAssets.children[0].name).toEqual('Checking');
-        expect(currentAssets.children[0].fullName).toEqual('Assets:Current Assets:Checking');
+        expect(currentAssets.children[0].fullName).toEqual(
+          'Assets:Current Assets:Checking',
+        );
         expect(currentAssets.children[0].depth).toEqual(3);
         expect(currentAssets.children[0].totalBalance).toEqual(1000);
         expect(currentAssets.children[1].name).toEqual('Savings');
-        expect(currentAssets.children[1].fullName).toEqual('Assets:Current Assets:Savings');
+        expect(currentAssets.children[1].fullName).toEqual(
+          'Assets:Current Assets:Savings',
+        );
         expect(currentAssets.children[1].depth).toEqual(3);
         expect(currentAssets.children[1].totalBalance).toEqual(2000);
 
@@ -224,30 +230,36 @@ describe('AccountService', () => {
       });
     });
   });
-  
+
   describe('#getRawAccountMap', () => {
     it('should correctly create a raw account map', (done) => {
-      let as = new AccountService(
-        new Logger,
-        new ApiMock() as ApiService,
-        new Mock() as WebSocketService,
-        new TransactionMock() as any,
-        new PriceMock() as any,
-        new SessionMock() as any
-      );
+      try {
+        let as = new AccountService(
+          new Logger(),
+          new ApiMock() as ApiService,
+          new Mock() as WebSocketService,
+          new TransactionMock() as any,
+          new PriceMock() as any,
+          new SessionMock() as any,
+        );
 
-      as['accountWs$'] = Observable.empty();
+        as['accountWs$'] = EMPTY;
 
-      as.getRawAccountMap().subscribe(accountMap => {
-        expect(Object.keys(accountMap).length).toEqual(rawAccounts.length);
-        expect(accountMap['5'].price).toEqual(10000);
-        expect(accountMap['7'].recentTxCount).toEqual(1);
-        expect(accountMap['8'].recentTxCount).toEqual(0);
-        done();
-      }, (err) => {
-        throw err;
-      });
-
+        as.getRawAccountMap().subscribe({
+          next: (accountMap) => {
+            expect(Object.keys(accountMap).length).toEqual(rawAccounts.length);
+            expect(accountMap['5'].price).toEqual(10000);
+            expect(accountMap['7'].recentTxCount).toEqual(1);
+            expect(accountMap['8'].recentTxCount).toEqual(0);
+            done();
+          },
+          error: (err) => {
+            throw err;
+          },
+        });
+      } catch (e) {
+        done.fail(e);
+      }
     });
   });
 });

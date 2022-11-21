@@ -11,16 +11,15 @@ import {
   FormArray,
   Validators,
   FormBuilder,
-  AbstractControl
+  AbstractControl,
 } from '@angular/forms';
 import { Util } from '../shared/util';
 import { OrgService } from '../core/org.service';
 import { TransactionService } from '../core/transaction.service';
 import { SessionService } from '../core/session.service';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/from';
-import 'rxjs/add/operator/mergeMap';
+import { Observable, filter, mergeMap, from } from 'rxjs';
 import { Reconciliation } from './reconciliation';
+import { concat } from 'rxjs/operators';
 
 class TxItem {
   tx: Transaction;
@@ -30,12 +29,11 @@ class TxItem {
 }
 
 @Component({
-  selector: 'reconcile-modal',
+  selector: 'app-reconcile-modal',
   templateUrl: './reconcile-modal.html',
-  styleUrls: ['./reconcile-modal.scss']
+  styleUrls: ['./reconcile-modal.scss'],
 })
-export class ReconcileModal {
-
+export class ReconcileModalComponent {
   public account: Account;
   public reconciliation: Reconciliation;
   public items: TxItem[];
@@ -52,7 +50,7 @@ export class ReconcileModal {
     private log: Logger,
     private txService: TransactionService,
     private sessionService: SessionService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
   ) {
     this.org = this.sessionService.getOrg();
   }
@@ -69,28 +67,39 @@ export class ReconcileModal {
 
     let txs$ = this.txService.getTransactionsByAccount(this.account.id);
     let newTxs$ = this.txService.getNewTransactionsByAccount(this.account.id);
-    let deletedTxs$ = this.txService.getDeletedTransactionsByAccount(this.account.id);
+    let deletedTxs$ = this.txService.getDeletedTransactionsByAccount(
+      this.account.id,
+    );
 
-    txs$.mergeMap(txs => txs).concat(newTxs$)
-      .filter(tx => {
-        let data = tx.getData();
-        let reconciled = true;
+    txs$
+      .pipe(
+        mergeMap((txs) => txs),
+        concat(newTxs$),
+        filter((tx) => {
+          let data = tx.getData();
+          let reconciled = true;
 
-        let reconciledSplits = Object.keys(data.reconciledSplits || []).map(index => parseInt(index));
-        tx.splits.forEach((split, index) => {
-          if(split.accountId === this.account.id && reconciledSplits.indexOf(index) === -1) {
-            reconciled = false;
-          }
-        });
+          let reconciledSplits = Object.keys(data.reconciledSplits || []).map(
+            (index) => parseInt(index),
+          );
+          tx.splits.forEach((split, index) => {
+            if (
+              split.accountId === this.account.id &&
+              reconciledSplits.indexOf(index) === -1
+            ) {
+              reconciled = false;
+            }
+          });
 
-        return !reconciled;
-      })
-      .subscribe(tx => {
+          return !reconciled;
+        }),
+      )
+      .subscribe((tx) => {
         // insert tx into list
         this.addTransaction(tx);
       });
 
-    deletedTxs$.subscribe(tx => {
+    deletedTxs$.subscribe((tx) => {
       this.removeTransaction(tx);
       // remove tx from list
     });
@@ -98,7 +107,7 @@ export class ReconcileModal {
 
   addTransaction(tx: Transaction) {
     tx.splits.forEach((split, index) => {
-      if(split.accountId !== this.account.id) {
+      if (split.accountId !== this.account.id) {
         return;
       }
 
@@ -108,7 +117,7 @@ export class ReconcileModal {
       item.splitIndex = index;
       item.reconciled = false;
 
-      if(split.amount >= 0) {
+      if (split.amount >= 0) {
         this.inflows.push(item);
       } else {
         this.outflows.push(item);
@@ -119,18 +128,18 @@ export class ReconcileModal {
   }
 
   removeTransaction(tx: Transaction) {
-    for(let i = 0; i < this.inflows.length; i++) {
+    for (let i = 0; i < this.inflows.length; i++) {
       let item = this.inflows[i];
 
-      if(item.tx.id === tx.id) {
+      if (item.tx.id === tx.id) {
         this.inflows.splice(i, 1);
       }
     }
 
-    for(let i = 0; i < this.outflows.length; i++) {
+    for (let i = 0; i < this.outflows.length; i++) {
       let item = this.outflows[i];
 
-      if(item.tx.id === tx.id) {
+      if (item.tx.id === tx.id) {
         this.outflows.splice(i, 1);
       }
     }
@@ -140,13 +149,13 @@ export class ReconcileModal {
     this.inflows.sort((a, b) => {
       let dateDiff = a.tx.date.getTime() - b.tx.date.getTime();
 
-      if(dateDiff) {
+      if (dateDiff) {
         return dateDiff;
       }
 
       let insertedDiff = a.tx.inserted.getTime() - b.tx.inserted.getTime();
 
-      if(insertedDiff) {
+      if (insertedDiff) {
         return insertedDiff;
       }
     });
@@ -154,13 +163,13 @@ export class ReconcileModal {
     this.outflows.sort((a, b) => {
       let dateDiff = a.tx.date.getTime() - b.tx.date.getTime();
 
-      if(dateDiff) {
+      if (dateDiff) {
         return dateDiff;
       }
 
       let insertedDiff = a.tx.inserted.getTime() - b.tx.inserted.getTime();
 
-      if(insertedDiff) {
+      if (insertedDiff) {
         return insertedDiff;
       }
     });
@@ -171,25 +180,25 @@ export class ReconcileModal {
 
     let data = item.tx.getData();
 
-    if(item.reconciled) {
-      if(!data.reconciledSplits) {
+    if (item.reconciled) {
+      if (!data.reconciledSplits) {
         data.reconciledSplits = {};
       }
 
       data.reconciledSplits[item.splitIndex] = this.reconciliation.endDate;
 
-      if(this.account.debitBalance) {
+      if (this.account.debitBalance) {
         this.reconciled += item.tx.splits[item.splitIndex].amount;
       } else {
         this.reconciled -= item.tx.splits[item.splitIndex].amount;
       }
     } else {
-      if(!data.reconciledSplits) {
+      if (!data.reconciledSplits) {
         return;
       }
 
       delete data.reconciledSplits[item.splitIndex];
-      if(this.account.debitBalance) {
+      if (this.account.debitBalance) {
         this.reconciled -= item.tx.splits[item.splitIndex].amount;
       } else {
         this.reconciled += item.tx.splits[item.splitIndex].amount;
@@ -200,30 +209,42 @@ export class ReconcileModal {
   }
 
   save() {
-    if(this.balance !== this.reconciled) {
-      this.error = new AppError('Reconciled amount doesn\'t match balance');
+    if (this.balance !== this.reconciled) {
+      this.error = new AppError("Reconciled amount doesn't match balance");
       return;
     }
 
     this.sessionService.setLoading(true);
 
-    let txs = this.inflows.filter(item => item.reconciled).map(item => item.tx);
+    let txs = this.inflows
+      .filter((item) => item.reconciled)
+      .map((item) => item.tx);
 
-    txs = txs.concat(this.outflows.filter(item => item.reconciled).map(item => item.tx));
+    txs = txs.concat(
+      this.outflows.filter((item) => item.reconciled).map((item) => item.tx),
+    );
 
-    Observable.from(txs).mergeMap(tx => {
-      let oldId = tx.id;
-      tx.id = Util.newGuid();
+    from(txs)
+      .pipe(
+        mergeMap((tx) => {
+          let oldId = tx.id;
+          tx.id = Util.newGuid();
 
-      return this.txService.putTransaction(oldId, tx);
-    }, 8).subscribe(tx => {
-      this.log.debug('Saved tx ' + tx.id);
-    }, err => {
-      this.error = err;
-      this.sessionService.setLoading(false);
-    }, () => {
-      this.sessionService.setLoading(false);
-      this.activeModal.close(txs);
-    });
+          return this.txService.putTransaction(oldId, tx);
+        }, 8),
+      )
+      .subscribe({
+        next: (tx) => {
+          this.log.debug('Saved tx ' + tx.id);
+        },
+        error: (err) => {
+          this.error = err;
+          this.sessionService.setLoading(false);
+        },
+        complete: () => {
+          this.sessionService.setLoading(false);
+          this.activeModal.close(txs);
+        },
+      });
   }
 }

@@ -1,17 +1,17 @@
 import { Component, OnInit } from '@angular/core';
 import { ConfigService } from '../core/config.service';
 import { SessionService } from '../core/session.service';
-import { RegisterPage } from '../register/register';
-
+import { RegisterPageComponent } from '../register/register';
 
 @Component({
   selector: 'app-logout',
-  templateUrl: 'logout.html'
+  templateUrl: 'logout.html',
 })
-export class LogoutPage implements OnInit {
-
-  constructor(private configService: ConfigService, private sessionService: SessionService) {
-  }
+export class LogoutPageComponent implements OnInit {
+  constructor(
+    private configService: ConfigService,
+    private sessionService: SessionService,
+  ) {}
 
   ngOnInit() {
     this.configService.clear();

@@ -1,8 +1,6 @@
 <h1>Settings</h1>
 
-<div class="description">
-  Use the forms below to change your settings.
-</div>
+<div class="description">Use the forms below to change your settings.</div>
 
 <div class="section">
   <h2>General</h2>
@@ -10,13 +8,20 @@
     <div class="form-group row">
       <label for="server" class="col-sm-3 col-form-label">Server</label>
       <div class="col-sm-9">
-        <input formControlName="server" id="server" type="text" class="form-control" placeholder="Server" />
+        <input
+          formControlName="server"
+          id="server"
+          type="text"
+          class="form-control"
+          placeholder="Server"
+        />
       </div>
     </div>
-    <p *ngIf="error" class="error">{{error.message}}</p>
-    <button type="submit" class="btn btn-primary" [disabled]="!form.valid">Save</button>
+    <p *ngIf="error" class="error">{{ error.message }}</p>
+    <button type="submit" class="btn btn-primary" [disabled]="!form.valid">
+      Save
+    </button>
   </form>
-
 </div>
 
 <div *ngIf="sessionService.getUser()">
@@ -25,22 +30,46 @@
 
     <form [formGroup]="changePasswordForm" (ngSubmit)="changePassword()">
       <div class="form-group row">
-        <label for="password" class="col-sm-3 col-form-label">New Password</label>
+        <label for="password" class="col-sm-3 col-form-label"
+          >New Password</label
+        >
         <div class="col-sm-9">
-          <input formControlName="password" id="password" type="password" class="form-control" />
+          <input
+            formControlName="password"
+            id="password"
+            type="password"
+            class="form-control"
+          />
         </div>
       </div>
       <div class="form-group row">
-        <label for="password2" class="col-sm-3 col-form-label">Repeat Password</label>
+        <label for="password2" class="col-sm-3 col-form-label"
+          >Repeat Password</label
+        >
         <div class="col-sm-9">
-          <input formControlName="password2" id="password2" type="password" class="form-control" />
+          <input
+            formControlName="password2"
+            id="password2"
+            type="password"
+            class="form-control"
+          />
         </div>
       </div>
-      <p *ngIf="changePasswordForm.controls.password2.errors?.mismatchedPassword">
+      <p
+        *ngIf="changePasswordForm.controls.password2.errors?.mismatchedPassword"
+      >
         Passwords do not match.
       </p>
-      <p *ngIf="changePasswordError" class="error">{{changePasswordError.message}}</p>
-      <button type="submit" class="btn btn-primary" [disabled]="!changePasswordForm.valid">Save</button>
+      <p *ngIf="changePasswordError" class="error">
+        {{ changePasswordError.message }}
+      </p>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        [disabled]="!changePasswordForm.valid"
+      >
+        Save
+      </button>
     </form>
   </div>
 
@@ -48,18 +77,25 @@
     <h2>API Keys</h2>
 
     <div class="container-fluid">
-      <form *ngFor="let item of keyItems; let i = index" [formGroup]="item.form">
+      <form
+        *ngFor="let item of keyItems; let i = index"
+        [formGroup]="item.form"
+      >
         <div class="row py-2">
           <div class="col-5">
-            <input type="hidden" formControlName="id" id="id">
-            {{item.form.value.id}}
+            <input type="hidden" formControlName="id" id="id" />
+            {{ item.form.value.id }}
           </div>
           <div class="col-5">
-            <input type="text" formControlName="label" id="label">
+            <input type="text" formControlName="label" id="label" />
           </div>
           <div class="col-2">
-            <div *ngIf="item.exists && item.form.dirty"><a (click)="updateKey(item)">Update</a></div>
-            <div *ngIf="item.exists"><a (click)="deleteKey(item)">Delete</a></div>
+            <div *ngIf="item.exists && item.form.dirty">
+              <a (click)="updateKey(item)">Update</a>
+            </div>
+            <div *ngIf="item.exists">
+              <a (click)="deleteKey(item)">Delete</a>
+            </div>
             <div *ngIf="!item.exists"><a (click)="postKey(item)">Save</a></div>
           </div>
         </div>
@@ -71,7 +107,7 @@
       </div>
       <div class="row" *ngIf="keyError">
         <div class="col-12">
-          <p class="error">{{keyError.message}}</p>
+          <p class="error">{{ keyError.message }}</p>
         </div>
       </div>
     </div>
