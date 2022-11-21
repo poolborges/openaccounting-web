@@ -1,0 +1,13 @@
+sdocker/
+dist/
+**/package-lock.json
+**/.editorconfig
+**/.gitattributes
+**/.gitignore
+**/.prettierignore
+**/.dockerignore
+**/Dockerfile*
+**/generated/
+.angular/
+.husky/
+.vscode/
